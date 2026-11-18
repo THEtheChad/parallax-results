@@ -1,0 +1,35 @@
+{
+  "name": "parallax-results",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Published Parallax benchmark results, and the site that compares them",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=24.11"
+  },
+  "scripts": {
+    "index": "node scripts/build-index.ts",
+    "dev": "pnpm index && vite",
+    "build": "pnpm index && vite build",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-table": "9.3.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "echarts": "6.1.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.5"
+  }
+}
