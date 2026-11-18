@@ -1,0 +1,39 @@
+{
+  "schema": "parallax.builds/1",
+  "description": "Known builds: each implementation and version, with the sha256 of every binary of it (one per platform, or one per local build where a build is not reproducible). A result's binaries are matched here by sha256; a binary not listed still counts, under its hash.",
+  "builds": [
+    {
+      "implementation": "tsc 7",
+      "version": "7.0.2",
+      "source": "npm typescript@7.0.2 (the native binary in @typescript/typescript-<platform>/lib/tsc)",
+      "binaries": {
+        "4f2de678286401759b3fb4475bafe35b8f32b4b3a07d92642bbf37eadc9b34a4": "linux-x64"
+      }
+    },
+    {
+      "implementation": "tsc 7",
+      "version": "7.1.0-beta (3e9236361fa9)",
+      "source": "microsoft/TypeScript@3e9236361fa97a9e6c685f4833ac457ae2d8c50a, go build -trimpath ./cmd/tsc (Go 1.27.1); two local builds",
+      "binaries": {
+        "f837cfc2407a14591424cf76f374112870c786d287bf22f506ec0a6e2b534a1a": "linux-x64",
+        "d62786f1b47019400b6214b76b962561e48130b14b3cee9205c468e8e8dec29a": "linux-x64"
+      }
+    },
+    {
+      "implementation": "tsrs",
+      "version": "0.25.0-ts7.1.0-beta",
+      "source": "npm tsrs@0.25.0-ts7.1.0-beta (@tsrs/<platform>)",
+      "binaries": {
+        "5df5caa2f34776a5c073487b63f4668ac7977af98229a6e77331a461ba0e547c": "linux-x64-gnu"
+      }
+    },
+    {
+      "implementation": "tsc-rs fork",
+      "version": "main e7847f46d",
+      "source": "THEtheChad/ts-rust@e7847f46dccf55c161557f8f468fd7feaa95370a, cargo build --release -p ts_goport --bin tsgo (local build)",
+      "binaries": {
+        "d43b5da3b9b75f13dd71b5a550a90be0d65ad815102762d2c32c9a123af21960": "linux-x64"
+      }
+    }
+  ]
+}

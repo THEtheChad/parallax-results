@@ -1,0 +1,3808 @@
+{
+ "schema": "parallax.result/1",
+ "kind": "cli-bench",
+ "publishedAt": "2026-11-18T01:08:32.622Z",
+ "machine": {
+  "id": "226cb975-0959-4abc-85d0-83ec35ee9728"
+ },
+ "project": {
+  "name": "hono",
+  "suite": true,
+  "repository": "https://github.com/honojs/hono",
+  "commit": "06880c4a2b04de9dd74217f26dd831209b9c01f1",
+  "clean": true
+ },
+ "harness": {
+  "name": "parallax",
+  "version": "0.0.0",
+  "gitCommit": "7866bf84d5cf2f49480e880893cba01c5fa32f30",
+  "gitDirty": false,
+  "node": "v24.22.1"
+ },
+ "host": {
+  "platform": "linux",
+  "kernel": "6.18.58.1-microsoft-standard-WSL2",
+  "arch": "x64",
+  "cpuModel": "AMD Ryzen 9 9955HX 16-Core Processor",
+  "cpus": 32,
+  "memTotalBytes": 50513203200,
+  "uptimeS": 61098,
+  "loadBefore": [
+   1.45,
+   1.94,
+   2.03
+  ],
+  "loadAfter": [
+   1.72,
+   1.94,
+   2.02
+  ],
+  "state": {
+   "governors": null,
+   "boost": null,
+   "smt": "on",
+   "affinity": {
+    "list": "0-31",
+    "cores": 32
+   },
+   "power": null,
+   "lowPowerMode": null,
+   "powerPlan": null
+  },
+  "load": {
+   "loadavg": [
+    1.45,
+    1.94,
+    2.03
+   ],
+   "uptimeS": 61098,
+   "pressureAvailable": true,
+   "priority": 0
+  },
+  "accounting": "gnu-time+proc",
+  "counters": "perf"
+ },
+ "corpus": {
+  "repository": "https://github.com/honojs/hono",
+  "gitCommit": "06880c4a2b04de9dd74217f26dd831209b9c01f1",
+  "gitStatus": [],
+  "statusSha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "statusSha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "changedDuringRun": false
+ },
+ "settings": {
+  "config": "tsconfig.build.json",
+  "threads": [
+   "default",
+   "single"
+  ],
+  "runs": 6,
+  "maxRuns": 15,
+  "minRounds": 3,
+  "resolution": 0.05,
+  "resolutionMs": 1,
+  "counterRuns": 3,
+  "warmup": 1,
+  "attempts": 3,
+  "timeoutMs": 600000,
+  "idle": {
+   "maxBusyCores": 1.5,
+   "windowMs": 1000,
+   "timeoutMs": 300000,
+   "bootSettleS": 300
+  },
+  "gates": {
+   "maxOutsideCores": 1,
+   "maxCanaryDrift": 0.1
+  }
+ },
+ "canary": {
+  "version": "parallax.canary/1",
+  "size": 60000
+ },
+ "sides": [
+  {
+   "label": "tsc7.0.2",
+   "role": "ref",
+   "profile": "tsc7",
+   "profileSha256": "47be09310657f0f9b1ddc7e0cd23005cdef9c656df019dbb2f3798f3e5768451",
+   "binSha256": "4f2de678286401759b3fb4475bafe35b8f32b4b3a07d92642bbf37eadc9b34a4",
+   "version": "Version 7.0.2",
+   "lspCommand": [
+    "<tsc7.0.2 binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "uriPrefix": "bundled:///libs/"
+   },
+   "processModel": "single",
+   "knownGaps": [],
+   "mode": "default",
+   "base": "tsc7.0.2",
+   "checkCommand": [
+    "<tsc7.0.2 binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false"
+   ]
+  },
+  {
+   "label": "tsc-rs-fork",
+   "role": "cand",
+   "profile": "tsc-rs-fork",
+   "profileSha256": "be2ffeee9541407aa908e28fa1ff6a3ffdf8f7d1ae2ed1ab0864a6cadad7be60",
+   "binSha256": "d43b5da3b9b75f13dd71b5a550a90be0d65ad815102762d2c32c9a123af21960",
+   "version": "Version 7.1.0-beta",
+   "lspCommand": [
+    "<tsc-rs-fork binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "uriPrefix": "bundled:///libs/"
+   },
+   "processModel": "launcher+worker",
+   "knownGaps": [],
+   "mode": "default",
+   "base": "tsc-rs-fork",
+   "checkCommand": [
+    "<tsc-rs-fork binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false"
+   ]
+  },
+  {
+   "label": "tsrs",
+   "role": "cand",
+   "profile": "tsrs",
+   "profileSha256": "e15a4c31cdc65c91c5371ff77d44e7915c857ca7d3a2fba97848870d3a016430",
+   "binSha256": "5df5caa2f34776a5c073487b63f4668ac7977af98229a6e77331a461ba0e547c",
+   "version": "Version 7.1.0-beta (tsrs 0.25.0-ts7.1.0-beta, microsoft/TypeScript@3e9236361fa9)",
+   "lspCommand": [
+    "<tsrs binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "dir": "<tsrs dir>"
+   },
+   "processModel": "single",
+   "knownGaps": [
+    "automatic type acquisition"
+   ],
+   "mode": "default",
+   "base": "tsrs",
+   "checkCommand": [
+    "<tsrs binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false"
+   ]
+  },
+  {
+   "label": "tsc7.1-beta",
+   "role": "cand",
+   "profile": "tsc7",
+   "profileSha256": "47be09310657f0f9b1ddc7e0cd23005cdef9c656df019dbb2f3798f3e5768451",
+   "binSha256": "f837cfc2407a14591424cf76f374112870c786d287bf22f506ec0a6e2b534a1a",
+   "version": "Version 7.1.0-beta",
+   "lspCommand": [
+    "<tsc7.1-beta binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "uriPrefix": "bundled:///libs/"
+   },
+   "processModel": "single",
+   "knownGaps": [],
+   "mode": "default",
+   "base": "tsc7.1-beta",
+   "checkCommand": [
+    "<tsc7.1-beta binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false"
+   ]
+  },
+  {
+   "label": "tsc7.0.2@1t",
+   "role": "ref",
+   "profile": "tsc7",
+   "profileSha256": "47be09310657f0f9b1ddc7e0cd23005cdef9c656df019dbb2f3798f3e5768451",
+   "binSha256": "4f2de678286401759b3fb4475bafe35b8f32b4b3a07d92642bbf37eadc9b34a4",
+   "version": "Version 7.0.2",
+   "lspCommand": [
+    "<tsc7.0.2 binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "uriPrefix": "bundled:///libs/"
+   },
+   "processModel": "single",
+   "knownGaps": [],
+   "mode": "single",
+   "base": "tsc7.0.2",
+   "checkCommand": [
+    "<tsc7.0.2 binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false",
+    "--singleThreaded"
+   ]
+  },
+  {
+   "label": "tsc-rs-fork@1t",
+   "role": "cand",
+   "profile": "tsc-rs-fork",
+   "profileSha256": "be2ffeee9541407aa908e28fa1ff6a3ffdf8f7d1ae2ed1ab0864a6cadad7be60",
+   "binSha256": "d43b5da3b9b75f13dd71b5a550a90be0d65ad815102762d2c32c9a123af21960",
+   "version": "Version 7.1.0-beta",
+   "lspCommand": [
+    "<tsc-rs-fork binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "uriPrefix": "bundled:///libs/"
+   },
+   "processModel": "launcher+worker",
+   "knownGaps": [],
+   "mode": "single",
+   "base": "tsc-rs-fork",
+   "checkCommand": [
+    "<tsc-rs-fork binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false",
+    "--singleThreaded"
+   ]
+  },
+  {
+   "label": "tsrs@1t",
+   "role": "cand",
+   "profile": "tsrs",
+   "profileSha256": "e15a4c31cdc65c91c5371ff77d44e7915c857ca7d3a2fba97848870d3a016430",
+   "binSha256": "5df5caa2f34776a5c073487b63f4668ac7977af98229a6e77331a461ba0e547c",
+   "version": "Version 7.1.0-beta (tsrs 0.25.0-ts7.1.0-beta, microsoft/TypeScript@3e9236361fa9)",
+   "lspCommand": [
+    "<tsrs binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "dir": "<tsrs dir>"
+   },
+   "processModel": "single",
+   "knownGaps": [
+    "automatic type acquisition"
+   ],
+   "mode": "single",
+   "base": "tsrs",
+   "checkCommand": [
+    "<tsrs binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false",
+    "--singleThreaded"
+   ]
+  },
+  {
+   "label": "tsc7.1-beta@1t",
+   "role": "cand",
+   "profile": "tsc7",
+   "profileSha256": "47be09310657f0f9b1ddc7e0cd23005cdef9c656df019dbb2f3798f3e5768451",
+   "binSha256": "f837cfc2407a14591424cf76f374112870c786d287bf22f506ec0a6e2b534a1a",
+   "version": "Version 7.1.0-beta",
+   "lspCommand": [
+    "<tsc7.1-beta binary>",
+    "--lsp",
+    "--stdio"
+   ],
+   "env": {
+    "cleared": [],
+    "set": {}
+   },
+   "lib": {
+    "uriPrefix": "bundled:///libs/"
+   },
+   "processModel": "single",
+   "knownGaps": [],
+   "mode": "single",
+   "base": "tsc7.1-beta",
+   "checkCommand": [
+    "<tsc7.1-beta binary>",
+    "-p",
+    "tsconfig.build.json",
+    "--noEmit",
+    "--pretty",
+    "false",
+    "--incremental",
+    "false",
+    "--composite",
+    "false",
+    "--singleThreaded"
+   ]
+  }
+ ],
+ "notes": [],
+ "createdAt": "2026-11-18T01:07:58.895Z",
+ "finishedAt": "2026-11-18T01:08:32.621Z",
+ "records": [
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:07:58.993Z",
+   "wallMs": 342.51823899999977,
+   "drainMs": 347.379193,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 347.2806569999998,
+    "machineCpuMs": 1640,
+    "machineCores": 4.722405256219038,
+    "selfCpuMs": 30.734000000000037,
+    "pressure": 0.0036742616505704225
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1790,
+   "userMs": 1500,
+   "sysMs": 290,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 353280000
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:07:59.343Z",
+   "wallMs": 119.96375499999976,
+   "drainMs": 121.99843199999987,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 121.91925700000002,
+    "machineCpuMs": 440,
+    "machineCores": 3.6089458780084263,
+    "selfCpuMs": 9.424999999999955,
+    "pressure": 0.0022227825748642807
+   },
+   "outsideCores": 0.4968452194553649,
+   "crashSignals": [],
+   "cpuMs": 370,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 370,
+   "adopted": 1,
+   "maxRssBytes": 209399808
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:07:59.467Z",
+   "wallMs": 109.65674399999989,
+   "drainMs": 111.34218800000008,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 111.30942899999991,
+    "machineCpuMs": 420,
+    "machineCores": 3.773265246019727,
+    "selfCpuMs": 9.455000000000041,
+    "pressure": 0.0037732652460197268
+   },
+   "outsideCores": 0.3642548557139754,
+   "crashSignals": [],
+   "cpuMs": 370,
+   "userMs": 180,
+   "sysMs": 190,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 135389184
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:07:59.580Z",
+   "wallMs": 269.657275,
+   "drainMs": 271.30917599999975,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 271.25583700000016,
+    "machineCpuMs": 1270,
+    "machineCores": 4.681926899880865,
+    "selfCpuMs": 15.017000000000053,
+    "pressure": 0.0039519886902931395
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1280,
+   "userMs": 1000,
+   "sysMs": 280,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 237223936
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:08:00.585Z",
+   "wallMs": 543.244533,
+   "drainMs": 545.054028,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 545.0068689999998,
+    "machineCpuMs": 760,
+    "machineCores": 1.3944778373059372,
+    "selfCpuMs": 24.523000000000025,
+    "pressure": 0.0008715486483162107
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 810,
+   "userMs": 600,
+   "sysMs": 210,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 261328896
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:08:01.131Z",
+   "wallMs": 246.36196199999995,
+   "drainMs": 248.04230999999982,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 247.99664799999982,
+    "machineCpuMs": 320,
+    "machineCores": 1.290340021047382,
+    "selfCpuMs": 12.524000000000001,
+    "pressure": 0.0005322652586820452
+   },
+   "outsideCores": 0.31240744834583434,
+   "crashSignals": [],
+   "cpuMs": 230,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 230,
+   "adopted": 1,
+   "maxRssBytes": 153346048
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:08:01.381Z",
+   "wallMs": 158.43165399999998,
+   "drainMs": 160.01782600000024,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 159.94505299999992,
+    "machineCpuMs": 170,
+    "machineCores": 1.0628650077723885,
+    "selfCpuMs": 10.761000000000081,
+    "pressure": 0.0004251460031089554
+   },
+   "outsideCores": 0.05776358709887654,
+   "crashSignals": [],
+   "cpuMs": 150,
+   "userMs": 120,
+   "sysMs": 30,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 88576000
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 0,
+   "attempt": 1,
+   "warmup": true,
+   "startedAt": "2026-11-18T01:08:01.542Z",
+   "wallMs": 392.57699699999966,
+   "drainMs": 394.3184019999999,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 394.25969699999996,
+    "machineCpuMs": 550,
+    "machineCores": 1.3950195878124465,
+    "selfCpuMs": 15.956999999999994,
+    "pressure": 0.0006036630216352041
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 560,
+   "userMs": 420,
+   "sysMs": 140,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 176328704
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:03.285Z",
+   "wallMs": 353.53689400000076,
+   "drainMs": 355.37210400000004,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 355.30018500000006,
+    "machineCpuMs": 1820,
+    "machineCores": 5.1224290806378265,
+    "selfCpuMs": 32.182000000000016,
+    "pressure": 0.0048325333689314
+   },
+   "outsideCores": 0.022003928874959586,
+   "crashSignals": [],
+   "cpuMs": 1780,
+   "userMs": 1380,
+   "sysMs": 400,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 353521664
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:03.643Z",
+   "wallMs": 120.1957480000001,
+   "drainMs": 122.07196399999975,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 122.00954599999932,
+    "machineCpuMs": 360,
+    "machineCores": 2.95058880065009,
+    "selfCpuMs": 8.669000000000096,
+    "pressure": 0.001434314000316016
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 380,
+   "adopted": 1,
+   "maxRssBytes": 209862656
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:03.778Z",
+   "wallMs": 111.89560299999994,
+   "drainMs": 113.473387,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 113.43894199999977,
+    "machineCpuMs": 400,
+    "machineCores": 3.5261259753286556,
+    "selfCpuMs": 8.711000000000013,
+    "pressure": 0.004531071878297323
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 410,
+   "userMs": 220,
+   "sysMs": 190,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 136806400
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:03.893Z",
+   "wallMs": 260.6530439999997,
+   "drainMs": 262.1364020000001,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 262.1146950000002,
+    "machineCpuMs": 1320,
+    "machineCores": 5.035963359475129,
+    "selfCpuMs": 14.57100000000014,
+    "pressure": 0.002754519352682609
+   },
+   "outsideCores": 0.17331725716484467,
+   "crashSignals": [],
+   "cpuMs": 1260,
+   "userMs": 970,
+   "sysMs": 290,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 236666880
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:04.157Z",
+   "wallMs": 531.3236830000005,
+   "drainMs": 532.9025540000002,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 532.867561,
+    "machineCpuMs": 940,
+    "machineCores": 1.7640405774297077,
+    "selfCpuMs": 18.741999999999962,
+    "pressure": 0.0006718367305530163
+   },
+   "outsideCores": 0.13372553560264486,
+   "crashSignals": [],
+   "cpuMs": 850,
+   "userMs": 690,
+   "sysMs": 160,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 261169152
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:04.691Z",
+   "wallMs": 240.15572000000066,
+   "drainMs": 241.76677199999995,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 241.73375699999997,
+    "machineCpuMs": 250,
+    "machineCores": 1.0341956502169452,
+    "selfCpuMs": 12.93600000000015,
+    "pressure": 0.0005336449555119438
+   },
+   "outsideCores": 0.029222232292529387,
+   "crashSignals": [],
+   "cpuMs": 230,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 230,
+   "adopted": 1,
+   "maxRssBytes": 154386432
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:04.934Z",
+   "wallMs": 137.767202,
+   "drainMs": 139.68384500000047,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 139.64642300000014,
+    "machineCpuMs": 170,
+    "machineCores": 1.2173602183852559,
+    "selfCpuMs": 9.135999999999967,
+    "pressure": 0.0011529117362354482
+   },
+   "outsideCores": 0.22101532811907398,
+   "crashSignals": [],
+   "cpuMs": 130,
+   "userMs": 100,
+   "sysMs": 30,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 90656768
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 1,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:05.076Z",
+   "wallMs": 405.4406799999997,
+   "drainMs": 407.6691889999993,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 407.6163859999997,
+    "machineCpuMs": 1370,
+    "machineCores": 3.361003254663077,
+    "selfCpuMs": 21.014999999999873,
+    "pressure": 0.001754100238747518
+   },
+   "outsideCores": 1.7393437171586146,
+   "crashSignals": [],
+   "cpuMs": 640,
+   "userMs": 570,
+   "sysMs": 70,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 175603712
+  },
+  {
+   "type": "round",
+   "round": 1,
+   "attempt": 1,
+   "order": [
+    "tsc7.0.2",
+    "tsc-rs-fork",
+    "tsrs",
+    "tsc7.1-beta",
+    "tsc7.0.2@1t",
+    "tsc-rs-fork@1t",
+    "tsrs@1t",
+    "tsc7.1-beta@1t"
+   ],
+   "window": {
+    "wallMs": 2508.737115,
+    "machineCpuMs": 7110,
+    "machineCores": 2.8340952734698948,
+    "selfCpuMs": 495.4219999999999,
+    "pressure": 0.0019212854033930935
+   },
+   "idle": {
+    "waitedMs": 1004.9015490000002,
+    "busyCores": 0.03746352957863389,
+    "pressure": 0.0003017718381094757,
+    "timedOut": false,
+    "uptimeS": 61101,
+    "bootSettleWaitedMs": 0
+   },
+   "outsideCores": 0.3725292675793177,
+   "canaryBeforeMs": 20.834288000000015,
+   "canaryAfterMs": 19.36180400000012,
+   "rejected": []
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:06.778Z",
+   "wallMs": 377.9445649999998,
+   "drainMs": 379.8033720000003,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 379.77844299999924,
+    "machineCpuMs": 580,
+    "machineCores": 1.5272062190217603,
+    "selfCpuMs": 30.520999999999958,
+    "pressure": 0.0020696277381915583
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 550,
+   "userMs": 450,
+   "sysMs": 100,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 177774592
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:07.159Z",
+   "wallMs": 152.78422200000023,
+   "drainMs": 154.73574200000076,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 154.7099419999995,
+    "machineCpuMs": 230,
+    "machineCores": 1.4866530038515609,
+    "selfCpuMs": 9.996999999999844,
+    "pressure": 0.0007433265019257804
+   },
+   "outsideCores": 0.4524790009940045,
+   "crashSignals": [],
+   "cpuMs": 150,
+   "userMs": 80,
+   "sysMs": 70,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 88739840
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:07.315Z",
+   "wallMs": 235.90520099999958,
+   "drainMs": 237.6824290000004,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 237.66035999999986,
+    "machineCpuMs": 280,
+    "machineCores": 1.178151880271494,
+    "selfCpuMs": 15.519000000000005,
+    "pressure": 0.0003071610259279252
+   },
+   "outsideCores": 0.18716204923698684,
+   "crashSignals": [],
+   "cpuMs": 220,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 220,
+   "adopted": 1,
+   "maxRssBytes": 154546176
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:07.554Z",
+   "wallMs": 525.5526569999984,
+   "drainMs": 527.3934169999993,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 527.377962999999,
+    "machineCpuMs": 770,
+    "machineCores": 1.4600534228238153,
+    "selfCpuMs": 21.77599999999984,
+    "pressure": 0.002015632192807423
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 800,
+   "userMs": 650,
+   "sysMs": 150,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 262537216
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:08.083Z",
+   "wallMs": 258.8063349999993,
+   "drainMs": 260.43794799999887,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 260.42724799999996,
+    "machineCpuMs": 1150,
+    "machineCores": 4.415820574965336,
+    "selfCpuMs": 14.481999999999971,
+    "pressure": 0.0022808673230690518
+   },
+   "outsideCores": 0.3283757773303354,
+   "crashSignals": [],
+   "cpuMs": 1050,
+   "userMs": 900,
+   "sysMs": 150,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 252768256
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:08.345Z",
+   "wallMs": 111.43349599999965,
+   "drainMs": 113.15960599999926,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 113.13184899999942,
+    "machineCpuMs": 450,
+    "machineCores": 3.9776597304619523,
+    "selfCpuMs": 9.948999999999842,
+    "pressure": 0.006169792204138762
+   },
+   "outsideCores": 0.5308054321643807,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 160,
+   "sysMs": 220,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 132128768
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:08.460Z",
+   "wallMs": 115.47348299999976,
+   "drainMs": 117.8885449999998,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 117.85442999999941,
+    "machineCpuMs": 380,
+    "machineCores": 3.224316642149149,
+    "selfCpuMs": 9.500999999999976,
+    "pressure": 0.002553998182333931
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 380,
+   "adopted": 1,
+   "maxRssBytes": 214601728
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 2,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:08.579Z",
+   "wallMs": 344.20168099999864,
+   "drainMs": 346.00152100000014,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 345.96990899999946,
+    "machineCpuMs": 1760,
+    "machineCores": 5.087147622425171,
+    "selfCpuMs": 21.778999999999996,
+    "pressure": 0.004058156398798261
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1790,
+   "userMs": 1440,
+   "sysMs": 350,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 353517568
+  },
+  {
+   "type": "round",
+   "round": 2,
+   "attempt": 1,
+   "order": [
+    "tsc7.1-beta@1t",
+    "tsrs@1t",
+    "tsc-rs-fork@1t",
+    "tsc7.0.2@1t",
+    "tsc7.1-beta",
+    "tsrs",
+    "tsc-rs-fork",
+    "tsc7.0.2"
+   ],
+   "window": {
+    "wallMs": 2412.625516,
+    "machineCpuMs": 5980,
+    "machineCores": 2.4786275202438004,
+    "selfCpuMs": 461.6120000000001,
+    "pressure": 0.004854047974845343
+   },
+   "idle": {
+    "waitedMs": 1003.1582590000007,
+    "busyCores": 0.24770653579527965,
+    "pressure": 0.00131966781106404,
+    "timedOut": false,
+    "uptimeS": 61105,
+    "bootSettleWaitedMs": 0
+   },
+   "outsideCores": 0.08222908971339915,
+   "canaryBeforeMs": 18.767808000000514,
+   "canaryAfterMs": 19.72869300000093,
+   "rejected": []
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:10.190Z",
+   "wallMs": 339.06121600000006,
+   "drainMs": 340.6926139999996,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 340.6765690000011,
+    "machineCpuMs": 1980,
+    "machineCores": 5.8119641330542855,
+    "selfCpuMs": 44.621000000000095,
+    "pressure": 0.007009580984713957
+   },
+   "outsideCores": 0.27996935709423443,
+   "crashSignals": [],
+   "cpuMs": 1840,
+   "userMs": 1520,
+   "sysMs": 320,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 358350848
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:10.532Z",
+   "wallMs": 120.69911800000045,
+   "drainMs": 122.57029300000067,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 122.54143600000134,
+    "machineCpuMs": 400,
+    "machineCores": 3.2642019961312974,
+    "selfCpuMs": 9.322000000000116,
+    "pressure": 0.0020319657425917326
+   },
+   "outsideCores": 0.08713787228672404,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 380,
+   "adopted": 1,
+   "maxRssBytes": 211271680
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:10.656Z",
+   "wallMs": 106.4391770000002,
+   "drainMs": 108.1792089999999,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 108.14597999999933,
+    "machineCpuMs": 320,
+    "machineCores": 2.9589634307257837,
+    "selfCpuMs": 8.324999999999818,
+    "pressure": 0.004336730778157476
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 370,
+   "userMs": 200,
+   "sysMs": 170,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 129990656
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:10.766Z",
+   "wallMs": 261.2578190000004,
+   "drainMs": 263.08994300000086,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 263.0268350000006,
+    "machineCpuMs": 1050,
+    "machineCores": 3.991988117866368,
+    "selfCpuMs": 21.46199999999999,
+    "pressure": 0.003178382920510746
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1170,
+   "userMs": 930,
+   "sysMs": 240,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 237813760
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:11.030Z",
+   "wallMs": 518.3701249999995,
+   "drainMs": 520.0361730000004,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 520.0070629999991,
+    "machineCpuMs": 760,
+    "machineCores": 1.46151861018088,
+    "selfCpuMs": 20.585999999999785,
+    "pressure": 0.0005499925296206995
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 760,
+   "userMs": 610,
+   "sysMs": 150,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 264540160
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:11.554Z",
+   "wallMs": 228.82806100000016,
+   "drainMs": 230.71167799999967,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 230.68733799999973,
+    "machineCpuMs": 240,
+    "machineCores": 1.0403691944288693,
+    "selfCpuMs": 11.077999999999975,
+    "pressure": 0.00040314306284118686
+   },
+   "outsideCores": 0.03867572480289332,
+   "crashSignals": [],
+   "cpuMs": 220,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 220,
+   "adopted": 1,
+   "maxRssBytes": 151904256
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:11.786Z",
+   "wallMs": 133.47701000000052,
+   "drainMs": 135.27590500000042,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 135.24998799999958,
+    "machineCpuMs": 170,
+    "machineCores": 1.256931719653835,
+    "selfCpuMs": 9.114000000000033,
+    "pressure": 0.0009094270677495394
+   },
+   "outsideCores": 0.302299472292745,
+   "crashSignals": [],
+   "cpuMs": 120,
+   "userMs": 100,
+   "sysMs": 20,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 90861568
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 3,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:11.923Z",
+   "wallMs": 370.9546140000002,
+   "drainMs": 372.68607800000063,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 372.6516219999994,
+    "machineCpuMs": 610,
+    "machineCores": 1.6369176034339143,
+    "selfCpuMs": 18.690000000000055,
+    "pressure": 0.000856027402451506
+   },
+   "outsideCores": 0.11085420688172937,
+   "crashSignals": [],
+   "cpuMs": 550,
+   "userMs": 450,
+   "sysMs": 100,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 178835456
+  },
+  {
+   "type": "round",
+   "round": 3,
+   "attempt": 1,
+   "order": [
+    "tsc7.0.2",
+    "tsc-rs-fork",
+    "tsrs",
+    "tsc7.1-beta",
+    "tsc7.0.2@1t",
+    "tsc-rs-fork@1t",
+    "tsrs@1t",
+    "tsc7.1-beta@1t"
+   ],
+   "window": {
+    "wallMs": 2361.588216,
+    "machineCpuMs": 5880,
+    "machineCores": 2.4898498223197434,
+    "selfCpuMs": 447.03700000000003,
+    "pressure": 0.002068099750375787
+   },
+   "idle": {
+    "waitedMs": 1001.4074930000006,
+    "busyCores": 0.00905124700955398,
+    "pressure": 0.000208821130919173,
+    "timedOut": false,
+    "uptimeS": 61108,
+    "bootSettleWaitedMs": 0
+   },
+   "outsideCores": 0.00972354106631422,
+   "canaryBeforeMs": 19.009549000000334,
+   "canaryAfterMs": 18.845430999999735,
+   "rejected": []
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:13.557Z",
+   "wallMs": 375.114458,
+   "drainMs": 376.76182300000073,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 376.7520970000005,
+    "machineCpuMs": 500,
+    "machineCores": 1.3271326264177352,
+    "selfCpuMs": 29.945999999999913,
+    "pressure": 0.0009343013689980856
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 550,
+   "userMs": 450,
+   "sysMs": 100,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 178126848
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:13.936Z",
+   "wallMs": 150.28255300000092,
+   "drainMs": 152.17414500000086,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 152.1458619999994,
+    "machineCpuMs": 200,
+    "machineCores": 1.3145280283731988,
+    "selfCpuMs": 8.70699999999988,
+    "pressure": 0.0008084347374495173
+   },
+   "outsideCores": 0.3371304307967332,
+   "crashSignals": [],
+   "cpuMs": 140,
+   "userMs": 90,
+   "sysMs": 50,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 88719360
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:14.089Z",
+   "wallMs": 231.16764899999907,
+   "drainMs": 232.85075499999948,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 232.82622099999935,
+    "machineCpuMs": 260,
+    "machineCores": 1.1167127090895863,
+    "selfCpuMs": 11.175000000000182,
+    "pressure": 0.0004982256702092
+   },
+   "outsideCores": 0.12380478399810431,
+   "crashSignals": [],
+   "cpuMs": 220,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 220,
+   "adopted": 1,
+   "maxRssBytes": 155258880
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:14.323Z",
+   "wallMs": 515.3452629999992,
+   "drainMs": 517.1618390000003,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 517.1073369999995,
+    "machineCpuMs": 780,
+    "machineCores": 1.508390897188142,
+    "selfCpuMs": 21.990999999999985,
+    "pressure": 0.0025255878355483503
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 820,
+   "userMs": 630,
+   "sysMs": 190,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 256086016
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:14.842Z",
+   "wallMs": 258.00077500000043,
+   "drainMs": 259.8501709999982,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 259.82366999999795,
+    "machineCpuMs": 980,
+    "machineCores": 3.771788767359062,
+    "selfCpuMs": 14.313000000000102,
+    "pressure": 0.0025363355078465532
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1060,
+   "userMs": 770,
+   "sysMs": 290,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 252674048
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:15.103Z",
+   "wallMs": 107.29083600000013,
+   "drainMs": 109.03598899999997,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 109.00030600000173,
+    "machineCpuMs": 400,
+    "machineCores": 3.6697144685079475,
+    "selfCpuMs": 7.876999999999953,
+    "pressure": 0.004678885947347633
+   },
+   "outsideCores": 0.11121987125430506,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 150,
+   "sysMs": 230,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 132567040
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:15.214Z",
+   "wallMs": 114.783449999999,
+   "drainMs": 116.61228399999891,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 116.58280300000115,
+    "machineCpuMs": 380,
+    "machineCores": 3.25948587803294,
+    "selfCpuMs": 9.605000000000018,
+    "pressure": 0.0019728467156515162
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 380,
+   "adopted": 1,
+   "maxRssBytes": 215347200
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 4,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:15.332Z",
+   "wallMs": 345.9355460000006,
+   "drainMs": 347.67912199999773,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 347.65334099999745,
+    "machineCpuMs": 2280,
+    "machineCores": 6.5582571231496285,
+    "selfCpuMs": 20.396000000000186,
+    "pressure": 0.008338766403513496
+   },
+   "outsideCores": 0.4015609330790261,
+   "crashSignals": [],
+   "cpuMs": 2120,
+   "userMs": 1640,
+   "sysMs": 480,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 351899648
+  },
+  {
+   "type": "round",
+   "round": 4,
+   "attempt": 1,
+   "order": [
+    "tsc7.1-beta@1t",
+    "tsrs@1t",
+    "tsc-rs-fork@1t",
+    "tsc7.0.2@1t",
+    "tsc7.1-beta",
+    "tsrs",
+    "tsc-rs-fork",
+    "tsc7.0.2"
+   ],
+   "window": {
+    "wallMs": 2387.5109380000013,
+    "machineCpuMs": 6090,
+    "machineCores": 2.5507736542985406,
+    "selfCpuMs": 446.9409999999998,
+    "pressure": 0.0026240717478128667
+   },
+   "idle": {
+    "waitedMs": 1002.899433999999,
+    "busyCores": 0.0783657468453667,
+    "pressure": 0.0004589385151421272,
+    "timedOut": false,
+    "uptimeS": 61112,
+    "bootSettleWaitedMs": 0
+   },
+   "outsideCores": 0,
+   "canaryBeforeMs": 18.849013999999443,
+   "canaryAfterMs": 19.349722999999358,
+   "rejected": []
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:16.950Z",
+   "wallMs": 332.25429599999916,
+   "drainMs": 334.29061699999875,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 334.2597989999995,
+    "machineCpuMs": 1860,
+    "machineCores": 5.564533951030118,
+    "selfCpuMs": 32.427000000000135,
+    "pressure": 0.00439478514734583
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1860,
+   "userMs": 1500,
+   "sysMs": 360,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 357535744
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:17.286Z",
+   "wallMs": 115.50706400000126,
+   "drainMs": 117.3682770000014,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 117.33996599999955,
+    "machineCpuMs": 320,
+    "machineCores": 2.7271185675987093,
+    "selfCpuMs": 9.083999999999833,
+    "pressure": 0.00202829443465154
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 360,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 360,
+   "adopted": 1,
+   "maxRssBytes": 214728704
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:17.405Z",
+   "wallMs": 104.67403800000102,
+   "drainMs": 107.00078100000246,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 106.97287800000049,
+    "machineCpuMs": 360,
+    "machineCores": 3.3653390161195658,
+    "selfCpuMs": 9.69399999999996,
+    "pressure": 0.004300155409486112
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 360,
+   "userMs": 210,
+   "sysMs": 150,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 132263936
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:17.514Z",
+   "wallMs": 253.17014299999937,
+   "drainMs": 255.01771200000076,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 254.98602500000197,
+    "machineCpuMs": 970,
+    "machineCores": 3.8041300498723114,
+    "selfCpuMs": 14.06399999999985,
+    "pressure": 0.003760990430750048
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1130,
+   "userMs": 900,
+   "sysMs": 230,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 242155520
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:17.770Z",
+   "wallMs": 527.3577339999974,
+   "drainMs": 529.0367679999981,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 528.999065,
+    "machineCpuMs": 810,
+    "machineCores": 1.5311936326390294,
+    "selfCpuMs": 21.490000000000236,
+    "pressure": 0.000646503978225368
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 800,
+   "userMs": 650,
+   "sysMs": 150,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 268271616
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:18.301Z",
+   "wallMs": 231.16265099999873,
+   "drainMs": 232.89611499999955,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 232.87164499999926,
+    "machineCpuMs": 240,
+    "machineCores": 1.0306106610789851,
+    "selfCpuMs": 12.864999999999782,
+    "pressure": 0.0002619468763575754
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 230,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 230,
+   "adopted": 1,
+   "maxRssBytes": 151916544
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:18.535Z",
+   "wallMs": 135.90737900000022,
+   "drainMs": 137.6847979999984,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 137.66066000000137,
+    "machineCpuMs": 160,
+    "machineCores": 1.1622783153879868,
+    "selfCpuMs": 10.601000000000113,
+    "pressure": 0.0010896359206762375
+   },
+   "outsideCores": 0.1409189815013214,
+   "crashSignals": [],
+   "cpuMs": 130,
+   "userMs": 100,
+   "sysMs": 30,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 90710016
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 5,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:18.674Z",
+   "wallMs": 381.85401400000046,
+   "drainMs": 383.58832600000096,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 383.56523200000083,
+    "machineCpuMs": 580,
+    "machineCores": 1.5121287113947772,
+    "selfCpuMs": 20.333000000000084,
+    "pressure": 0.0007534572372294665
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 580,
+   "userMs": 470,
+   "sysMs": 110,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 174526464
+  },
+  {
+   "type": "round",
+   "round": 5,
+   "attempt": 1,
+   "order": [
+    "tsc7.0.2",
+    "tsc-rs-fork",
+    "tsrs",
+    "tsc7.1-beta",
+    "tsc7.0.2@1t",
+    "tsc-rs-fork@1t",
+    "tsrs@1t",
+    "tsc7.1-beta@1t"
+   ],
+   "window": {
+    "wallMs": 2368.307570000001,
+    "machineCpuMs": 5640,
+    "machineCores": 2.3814474401228205,
+    "selfCpuMs": 449.009,
+    "pressure": 0.001715148847833138
+   },
+   "idle": {
+    "waitedMs": 1003.4283199999991,
+    "busyCores": 0.027804351898626865,
+    "pressure": 0.0012126135825525498,
+    "timedOut": false,
+    "uptimeS": 61115,
+    "bootSettleWaitedMs": 0
+   },
+   "outsideCores": 0,
+   "canaryBeforeMs": 19.31329099999857,
+   "canaryAfterMs": 19.341953999999532,
+   "rejected": []
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:20.319Z",
+   "wallMs": 374.15074299999833,
+   "drainMs": 375.80107599999974,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 375.77968899999905,
+    "machineCpuMs": 630,
+    "machineCores": 1.6765142407683498,
+    "selfCpuMs": 29.963999999999942,
+    "pressure": 0.0008302737192376589
+   },
+   "outsideCores": 0.10654114943397103,
+   "crashSignals": [],
+   "cpuMs": 560,
+   "userMs": 450,
+   "sysMs": 110,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 176078848
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:20.697Z",
+   "wallMs": 151.47147899999982,
+   "drainMs": 153.16342599999916,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 153.1348020000005,
+    "machineCpuMs": 220,
+    "machineCores": 1.4366427299785145,
+    "selfCpuMs": 11.233999999999924,
+    "pressure": 0.007842763266837255
+   },
+   "outsideCores": 0.38375339395417046,
+   "crashSignals": [],
+   "cpuMs": 150,
+   "userMs": 80,
+   "sysMs": 70,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 88489984
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:20.851Z",
+   "wallMs": 230.37678799999776,
+   "drainMs": 231.96561099999963,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 231.93144799999936,
+    "machineCpuMs": 270,
+    "machineCores": 1.1641370858858293,
+    "selfCpuMs": 11.527999999999793,
+    "pressure": 0.00048290130970078844
+   },
+   "outsideCores": 0.16587659988222173,
+   "crashSignals": [],
+   "cpuMs": 220,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 220,
+   "adopted": 1,
+   "maxRssBytes": 151040000
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:21.085Z",
+   "wallMs": 507.9804660000009,
+   "drainMs": 509.5770420000008,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 509.558688000001,
+    "machineCpuMs": 830,
+    "machineCores": 1.6288604620946006,
+    "selfCpuMs": 24.53500000000031,
+    "pressure": 0.0010636655065726188
+   },
+   "outsideCores": 0.01072496677752589,
+   "crashSignals": [],
+   "cpuMs": 800,
+   "userMs": 680,
+   "sysMs": 120,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 256610304
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:21.596Z",
+   "wallMs": 269.97770200000014,
+   "drainMs": 271.7182649999995,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 271.6914059999981,
+    "machineCpuMs": 1350,
+    "machineCores": 4.9688726628328075,
+    "selfCpuMs": 17.695000000000164,
+    "pressure": 0.007475392872750691
+   },
+   "outsideCores": 0.04529035416011621,
+   "crashSignals": [],
+   "cpuMs": 1320,
+   "userMs": 930,
+   "sysMs": 390,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 235909120
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:21.869Z",
+   "wallMs": 117.1223949999985,
+   "drainMs": 118.90276900000026,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 118.87166799999977,
+    "machineCpuMs": 350,
+    "machineCores": 2.944351718863747,
+    "selfCpuMs": 10.764999999999873,
+    "pressure": 0.0041473297068566495
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 390,
+   "userMs": 220,
+   "sysMs": 170,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 136065024
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:21.990Z",
+   "wallMs": 123.33992299999954,
+   "drainMs": 125.24678700000004,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 125.23265600000013,
+    "machineCpuMs": 440,
+    "machineCores": 3.5134605785251374,
+    "selfCpuMs": 9.490000000000236,
+    "pressure": 0.0022997196513982717
+   },
+   "outsideCores": 0.40332930413932694,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 380,
+   "adopted": 1,
+   "maxRssBytes": 209506304
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 6,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:22.116Z",
+   "wallMs": 326.3944440000014,
+   "drainMs": 328.3930220000002,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 328.3851029999969,
+    "machineCpuMs": 1790,
+    "machineCores": 5.450917181221881,
+    "selfCpuMs": 32.23500000000013,
+    "pressure": 0.004628711796344837
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1850,
+   "userMs": 1500,
+   "sysMs": 350,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 352153600
+  },
+  {
+   "type": "round",
+   "round": 6,
+   "attempt": 1,
+   "order": [
+    "tsc7.1-beta@1t",
+    "tsrs@1t",
+    "tsc-rs-fork@1t",
+    "tsc7.0.2@1t",
+    "tsc7.1-beta",
+    "tsrs",
+    "tsc-rs-fork",
+    "tsc7.0.2"
+   ],
+   "window": {
+    "wallMs": 2385.217227000001,
+    "machineCpuMs": 6210,
+    "machineCores": 2.6035364534955194,
+    "selfCpuMs": 461.85300000000007,
+    "pressure": 0.004219322200962787
+   },
+   "idle": {
+    "waitedMs": 1001.6987289999997,
+    "busyCores": 0.05898086346285903,
+    "pressure": 0.0005374247094204022,
+    "timedOut": false,
+    "uptimeS": 61118,
+    "bootSettleWaitedMs": 0
+   },
+   "outsideCores": 0.032763053660437066,
+   "canaryBeforeMs": 18.800325000000157,
+   "canaryAfterMs": 18.45110299999942,
+   "rejected": []
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2",
+   "role": "ref",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:23.711Z",
+   "wallMs": 334.31066700000156,
+   "drainMs": 336.13762399999905,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 336.11882999999943,
+    "machineCpuMs": 1800,
+    "machineCores": 5.355248915986061,
+    "selfCpuMs": 37.003999999999905,
+    "pressure": 0.0031685222752917525
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1900,
+   "userMs": 1530,
+   "sysMs": 370,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 358785024
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork",
+   "role": "cand",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:24.049Z",
+   "wallMs": 119.80226599999878,
+   "drainMs": 121.68593599999804,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 121.66231499999776,
+    "machineCpuMs": 420,
+    "machineCores": 3.45217826900637,
+    "selfCpuMs": 8.195999999999913,
+    "pressure": 0.0029672294169316655
+   },
+   "outsideCores": 0.26141208968447355,
+   "crashSignals": [],
+   "cpuMs": 380,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 380,
+   "adopted": 1,
+   "maxRssBytes": 211685376
+  },
+  {
+   "type": "sample",
+   "side": "tsrs",
+   "role": "cand",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:24.172Z",
+   "wallMs": 118.9471279999998,
+   "drainMs": 120.8348279999991,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 120.8038430000015,
+    "machineCpuMs": 490,
+    "machineCores": 4.056162352384716,
+    "selfCpuMs": 8.034999999999854,
+    "pressure": 0.004925339999324298
+   },
+   "outsideCores": 0.5957178034476871,
+   "crashSignals": [],
+   "cpuMs": 410,
+   "userMs": 230,
+   "sysMs": 180,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 136945664
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta",
+   "role": "cand",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:24.294Z",
+   "wallMs": 256.86093600000095,
+   "drainMs": 258.6204829999988,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 258.59043100000054,
+    "machineCpuMs": 1130,
+    "machineCores": 4.3698446057348415,
+    "selfCpuMs": 17.61700000000019,
+    "pressure": 0.0025484315001586375
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 1240,
+   "userMs": 900,
+   "sysMs": 340,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 241295360
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.0.2@1t",
+   "role": "ref",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:24.554Z",
+   "wallMs": 535.6879399999998,
+   "drainMs": 537.3192759999984,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 0,
+   "window": {
+    "wallMs": 537.2936760000011,
+    "machineCpuMs": 780,
+    "machineCores": 1.4517200459288457,
+    "selfCpuMs": 20.52099999999973,
+    "pressure": 0.0020249633461161334
+   },
+   "outsideCores": 0,
+   "crashSignals": [],
+   "cpuMs": 800,
+   "userMs": 630,
+   "sysMs": 170,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 264798208
+  },
+  {
+   "type": "sample",
+   "side": "tsc-rs-fork@1t",
+   "role": "cand",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:25.093Z",
+   "wallMs": 243.60407399999895,
+   "drainMs": 245.30192800000077,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 245.2720420000005,
+    "machineCpuMs": 270,
+    "machineCores": 1.1008184944291344,
+    "selfCpuMs": 11.684999999999945,
+    "pressure": 0.000305782915119204
+   },
+   "outsideCores": 0.07467218787210984,
+   "crashSignals": [],
+   "cpuMs": 240,
+   "userMs": 0,
+   "sysMs": 0,
+   "adoptedCpuMs": 240,
+   "adopted": 1,
+   "maxRssBytes": 154296320
+  },
+  {
+   "type": "sample",
+   "side": "tsrs@1t",
+   "role": "cand",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:25.340Z",
+   "wallMs": 137.81166000000303,
+   "drainMs": 139.5334670000011,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 139.50109000000157,
+    "machineCpuMs": 190,
+    "machineCores": 1.3619965263353704,
+    "selfCpuMs": 8.437999999999647,
+    "pressure": 0.0005806406243850789
+   },
+   "outsideCores": 0.3696171836363413,
+   "crashSignals": [],
+   "cpuMs": 130,
+   "userMs": 120,
+   "sysMs": 10,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 90742784
+  },
+  {
+   "type": "sample",
+   "side": "tsc7.1-beta@1t",
+   "role": "cand",
+   "round": 7,
+   "attempt": 1,
+   "warmup": false,
+   "startedAt": "2026-11-18T01:08:25.481Z",
+   "wallMs": 381.6282969999993,
+   "drainMs": 383.21701100000064,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "stdoutSha256": "5839aa61cfc707082963101a92aa4263902367046ddaff64d5bd67a938537735",
+   "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "outputLines": 2,
+   "window": {
+    "wallMs": 383.1976360000008,
+    "machineCpuMs": 550,
+    "machineCores": 1.4352906916158503,
+    "selfCpuMs": 18.22699999999986,
+    "pressure": 0.0015527235663844198
+   },
+   "outsideCores": 0.004626855265882002,
+   "crashSignals": [],
+   "cpuMs": 530,
+   "userMs": 450,
+   "sysMs": 80,
+   "adoptedCpuMs": 0,
+   "adopted": 0,
+   "maxRssBytes": 177319936
+  },
+  {
+   "type": "round",
+   "round": 7,
+   "attempt": 1,
+   "order": [
+    "tsc7.0.2",
+    "tsc-rs-fork",
+    "tsrs",
+    "tsc7.1-beta",
+    "tsc7.0.2@1t",
+    "tsc-rs-fork@1t",
+    "tsrs@1t",
+    "tsc7.1-beta@1t"
+   ],
+   "window": {
+    "wallMs": 2411.8788000000022,
+    "machineCpuMs": 5950,
+    "machineCores": 2.466956465639979,
+    "selfCpuMs": 441.82699999999977,
+    "pressure": 0.0018902276515718767
+   },
+   "idle": {
+    "waitedMs": 1002.9077580000012,
+    "busyCores": 0.04847612325005991,
+    "pressure": 0.0007193250501820008,
+    "timedOut": false,
+    "uptimeS": 61122,
+    "bootSettleWaitedMs": 0
+   },
+   "outsideCores": 0,
+   "canaryBeforeMs": 18.979644999999437,
+   "canaryAfterMs": 18.673499999997148,
+   "rejected": []
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.0.2",
+   "run": 1,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 10601616875,
+    "cycles": 5821203847,
+    "taskClockMs": 1736.67,
+    "pageFaults": 95735
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc-rs-fork",
+   "run": 1,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2970914098,
+    "cycles": 1466858432,
+    "taskClockMs": 403.58,
+    "pageFaults": 48660
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsrs",
+   "run": 1,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2206898298,
+    "cycles": 1024799617,
+    "taskClockMs": 449.11,
+    "pageFaults": 14867
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.1-beta",
+   "run": 1,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 7260183611,
+    "cycles": 4146540931,
+    "taskClockMs": 1191.46,
+    "pageFaults": 63006
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.0.2@1t",
+   "run": 1,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 6480385334,
+    "cycles": 2990796558,
+    "taskClockMs": 783.26,
+    "pageFaults": 65973
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc-rs-fork@1t",
+   "run": 1,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2165626643,
+    "cycles": 998918369,
+    "taskClockMs": 244.86,
+    "pageFaults": 32804
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsrs@1t",
+   "run": 1,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 1471807788,
+    "cycles": 581121715,
+    "taskClockMs": 174.93,
+    "pageFaults": 6165
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.1-beta@1t",
+   "run": 1,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 4271858680,
+    "cycles": 2081983303,
+    "taskClockMs": 536.81,
+    "pageFaults": 44972
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.1-beta@1t",
+   "run": 2,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 4256857786,
+    "cycles": 2089788062,
+    "taskClockMs": 551.32,
+    "pageFaults": 44892
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsrs@1t",
+   "run": 2,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 1471500821,
+    "cycles": 588812914,
+    "taskClockMs": 165.45,
+    "pageFaults": 6147
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc-rs-fork@1t",
+   "run": 2,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2165672236,
+    "cycles": 965756248,
+    "taskClockMs": 237.45,
+    "pageFaults": 32824
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.0.2@1t",
+   "run": 2,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 6471908057,
+    "cycles": 3070941925,
+    "taskClockMs": 798.18,
+    "pageFaults": 65869
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.1-beta",
+   "run": 2,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 7433779369,
+    "cycles": 4255664546,
+    "taskClockMs": 1206.64,
+    "pageFaults": 62791
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsrs",
+   "run": 2,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2194528059,
+    "cycles": 1005883785,
+    "taskClockMs": 411.19,
+    "pageFaults": 15251
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc-rs-fork",
+   "run": 2,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2970254603,
+    "cycles": 1460408629,
+    "taskClockMs": 405.88,
+    "pageFaults": 48689
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.0.2",
+   "run": 2,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 12164429557,
+    "cycles": 6468272982,
+    "taskClockMs": 1835.2,
+    "pageFaults": 92411
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.0.2",
+   "run": 3,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 12018686226,
+    "cycles": 6520869454,
+    "taskClockMs": 1893.76,
+    "pageFaults": 94296
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc-rs-fork",
+   "run": 3,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2964883112,
+    "cycles": 1427944672,
+    "taskClockMs": 400.19,
+    "pageFaults": 48670
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsrs",
+   "run": 3,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2197818379,
+    "cycles": 1015646164,
+    "taskClockMs": 434.35,
+    "pageFaults": 15294
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.1-beta",
+   "run": 3,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 7478522052,
+    "cycles": 4246817743,
+    "taskClockMs": 1205.22,
+    "pageFaults": 62707
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.0.2@1t",
+   "run": 3,
+   "exit": {
+    "code": 0,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 6927592790,
+    "cycles": 3263458811,
+    "taskClockMs": 831.78,
+    "pageFaults": 64310
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc-rs-fork@1t",
+   "run": 3,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 2165656755,
+    "cycles": 965283835,
+    "taskClockMs": 236.14,
+    "pageFaults": 32840
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsrs@1t",
+   "run": 3,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 1471612277,
+    "cycles": 575014118,
+    "taskClockMs": 159.84,
+    "pageFaults": 6170
+   }
+  },
+  {
+   "type": "counters",
+   "side": "tsc7.1-beta@1t",
+   "run": 3,
+   "exit": {
+    "code": 2,
+    "signal": null
+   },
+   "timedOut": false,
+   "counters": {
+    "instructions": 4282553951,
+    "cycles": 2084700846,
+    "taskClockMs": 550.71,
+    "pageFaults": 44890
+   }
+  }
+ ],
+ "summary": {
+  "schema": "parallax.bench-summary/1",
+  "canaryBaselineMs": 18.45110299999942,
+  "rounds": {
+   "planned": 6,
+   "max": 15,
+   "attempts": 7,
+   "accepted": 6,
+   "rejected": 1,
+   "failed": 0
+  },
+  "minRounds": 3,
+  "confidence": 0.95,
+  "resolution": {
+   "relative": 0.05,
+   "floorMs": 1
+  },
+  "gates": {
+   "maxOutsideCores": 1,
+   "maxCanaryDrift": 0.1
+  },
+  "rejections": {
+   "canary slower than the fastest canary": 1
+  },
+  "accounting": "gnu-time+proc",
+  "sides": [
+   {
+    "label": "tsc7.0.2",
+    "role": "ref",
+    "mode": "default",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 336.6859415000008,
+     "low": 326.3944440000014,
+     "high": 345.9355460000006,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 1855,
+     "low": 1790,
+     "high": 2120,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 355526656,
+    "failures": 0,
+    "exitCodes": [
+     0
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": null
+   },
+   {
+    "label": "tsc-rs-fork",
+    "role": "cand",
+    "mode": "default",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 117.65466500000002,
+     "low": 114.783449999999,
+     "high": 123.33992299999954,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 380,
+     "low": 360,
+     "high": 380,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 213143552,
+    "failures": 0,
+    "exitCodes": [
+     2
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": false
+   },
+   {
+    "label": "tsrs",
+    "role": "cand",
+    "mode": "default",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 109.36216599999989,
+     "low": 104.67403800000102,
+     "high": 118.9471279999998,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 380,
+     "low": 360,
+     "high": 410,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 132415488,
+    "failures": 0,
+    "exitCodes": [
+     2
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": false
+   },
+   {
+    "label": "tsc7.1-beta",
+    "role": "cand",
+    "mode": "default",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 258.40355499999987,
+     "low": 253.17014299999937,
+     "high": 269.97770200000014,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 1150,
+     "low": 1050,
+     "high": 1320,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 241725440,
+    "failures": 0,
+    "exitCodes": [
+     2
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": false
+   },
+   {
+    "label": "tsc7.0.2@1t",
+    "role": "ref",
+    "mode": "single",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 521.9613909999989,
+     "low": 507.9804660000009,
+     "high": 535.6879399999998,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 800,
+     "low": 760,
+     "high": 820,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 263538688,
+    "failures": 0,
+    "exitCodes": [
+     0
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": true
+   },
+   {
+    "label": "tsc-rs-fork@1t",
+    "role": "cand",
+    "mode": "single",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 231.1651499999989,
+     "low": 228.82806100000016,
+     "high": 243.60407399999895,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 220,
+     "low": 220,
+     "high": 240,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 153106432,
+    "failures": 0,
+    "exitCodes": [
+     2
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": false
+   },
+   {
+    "label": "tsrs@1t",
+    "role": "cand",
+    "mode": "single",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 144.04710650000197,
+     "low": 133.47701000000052,
+     "high": 152.78422200000023,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 135,
+     "low": 120,
+     "high": 150,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 89724928,
+    "failures": 0,
+    "exitCodes": [
+     2
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": false
+   },
+   {
+    "label": "tsc7.1-beta@1t",
+    "role": "cand",
+    "mode": "single",
+    "samples": 6,
+    "wallMs": {
+     "estimate": 376.5295114999999,
+     "low": 370.9546140000002,
+     "high": 381.85401400000046,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuMs": {
+     "estimate": 550,
+     "low": 530,
+     "high": 580,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "maxRssBytes": 177547264,
+    "failures": 0,
+    "exitCodes": [
+     2
+    ],
+    "outputs": 1,
+    "outputStable": true,
+    "outputMatchesRef": false
+   }
+  ],
+  "candidates": [
+   {
+    "label": "tsc-rs-fork",
+    "ref": "tsc7.0.2",
+    "mode": "default",
+    "state": "measured",
+    "wallRatio": {
+     "estimate": 0.3518134382283164,
+     "low": 0.3318058850188202,
+     "high": 0.37788609845331506,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuRatio": {
+     "estimate": 0.20270270270270271,
+     "low": 0.1792452830188679,
+     "high": 0.2122905027932961,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "call": "faster",
+    "sameWithin": 0.05
+   },
+   {
+    "label": "tsrs",
+    "ref": "tsc7.0.2",
+    "mode": "default",
+    "state": "measured",
+    "wallRatio": {
+     "estimate": 0.3193933578564676,
+     "low": 0.31014689655511707,
+     "high": 0.3588369751784072,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuRatio": {
+     "estimate": 0.20594888366627498,
+     "low": 0.1792452830188679,
+     "high": 0.21578947368421053,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "call": "faster",
+    "sameWithin": 0.05
+   },
+   {
+    "label": "tsc7.1-beta",
+    "ref": "tsc7.0.2",
+    "mode": "default",
+    "state": "measured",
+    "wallRatio": {
+     "estimate": 0.7651535487430086,
+     "low": 0.7458059109080394,
+     "high": 0.8271516472259528,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuRatio": {
+     "estimate": 0.6216982234689108,
+     "low": 0.5,
+     "high": 0.7135135135135136,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "call": "faster",
+    "sameWithin": 0.05
+   },
+   {
+    "label": "tsc-rs-fork@1t",
+    "ref": "tsc7.0.2@1t",
+    "mode": "single",
+    "state": "measured",
+    "wallRatio": {
+     "estimate": 0.4487196088553612,
+     "low": 0.438341255084352,
+     "high": 0.45474996879713037,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuRatio": {
+     "estimate": 0.28125,
+     "low": 0.2682926829268293,
+     "high": 0.3,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "call": "faster",
+    "sameWithin": 0.05
+   },
+   {
+    "label": "tsrs@1t",
+    "ref": "tsc7.0.2@1t",
+    "mode": "single",
+    "state": "measured",
+    "wallRatio": {
+     "estimate": 0.2742126824611727,
+     "low": 0.25726108375709017,
+     "high": 0.2981836687397337,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuRatio": {
+     "estimate": 0.1666158536585366,
+     "low": 0.15789473684210525,
+     "high": 0.1875,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "call": "faster",
+    "sameWithin": 0.05
+   },
+   {
+    "label": "tsc7.1-beta@1t",
+    "ref": "tsc7.0.2@1t",
+    "mode": "single",
+    "state": "measured",
+    "wallRatio": {
+     "estimate": 0.7216132695978276,
+     "low": 0.712407856335163,
+     "high": 0.7365455328355041,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "cpuRatio": {
+     "estimate": 0.69375,
+     "low": 0.6625,
+     "high": 0.725,
+     "confidence": 0.96875,
+     "n": 6
+    },
+    "call": "faster",
+    "sameWithin": 0.05
+   }
+  ],
+  "speedups": [
+   {
+    "base": "tsc7.0.2",
+    "ratio": {
+     "estimate": 1.5425892661354998,
+     "low": 1.4897146851743253,
+     "high": 1.6023656822173649,
+     "confidence": 0.96875,
+     "n": 6
+    }
+   },
+   {
+    "base": "tsc-rs-fork",
+    "ratio": {
+     "estimate": 2.0076158259398467,
+     "low": 1.8678201055792665,
+     "high": 2.0429382995228442,
+     "confidence": 0.96875,
+     "n": 6
+    }
+   },
+   {
+    "base": "tsrs",
+    "ratio": {
+     "estimate": 1.2958309091633184,
+     "low": 1.1585959435691735,
+     "high": 1.400702600546432,
+     "confidence": 0.96875,
+     "n": 6
+    }
+   },
+   {
+    "base": "tsc7.1-beta",
+    "ratio": {
+     "estimate": 1.457132509816553,
+     "low": 1.3858579439275254,
+     "high": 1.508290075105742,
+     "confidence": 0.96875,
+     "n": 6
+    }
+   }
+  ],
+  "settled": true,
+  "counters": {
+   "backend": "perf",
+   "sides": [
+    {
+     "label": "tsc7.0.2",
+     "runs": 3,
+     "instructions": {
+      "median": 12018686226,
+      "spread": 0.13003190636753378
+     },
+     "cycles": {
+      "median": 6468272982,
+      "spread": 0.10816884336004977
+     },
+     "ipc": 1.8580981754242234,
+     "taskClockMs": {
+      "median": 1835.2,
+      "spread": 0.08559829991281599
+     },
+     "pageFaults": {
+      "median": 94296,
+      "spread": 0.03525069992364469
+     }
+    },
+    {
+     "label": "tsc-rs-fork",
+     "runs": 3,
+     "instructions": {
+      "median": 2970254603,
+      "spread": 0.0020304609557405
+     },
+     "cycles": {
+      "median": 1460408629,
+      "spread": 0.026645802570096976
+     },
+     "ipc": 2.0338517206885114,
+     "taskClockMs": {
+      "median": 403.58,
+      "spread": 0.014098815600376624
+     },
+     "pageFaults": {
+      "median": 48670,
+      "spread": 0.0005958495993425108
+     }
+    },
+    {
+     "label": "tsrs",
+     "runs": 3,
+     "instructions": {
+      "median": 2197818379,
+      "spread": 0.005628417306087147
+     },
+     "cycles": {
+      "median": 1015646164,
+      "spread": 0.018624431096655035
+     },
+     "ipc": 2.163960695075298,
+     "taskClockMs": {
+      "median": 434.35,
+      "spread": 0.0873028663520203
+     },
+     "pageFaults": {
+      "median": 15251,
+      "spread": 0.027998164054816078
+     }
+    },
+    {
+     "label": "tsc7.1-beta",
+     "runs": 3,
+     "instructions": {
+      "median": 7433779369,
+      "spread": 0.029371122031211307
+     },
+     "cycles": {
+      "median": 4246817743,
+      "spread": 0.025695384545255724
+     },
+     "ipc": 1.7504352244108066,
+     "taskClockMs": {
+      "median": 1205.22,
+      "spread": 0.012595210832877037
+     },
+     "pageFaults": {
+      "median": 62791,
+      "spread": 0.0047618289245274
+     }
+    },
+    {
+     "label": "tsc7.0.2@1t",
+     "runs": 3,
+     "instructions": {
+      "median": 6480385334,
+      "spread": 0.0703175366145596
+     },
+     "cycles": {
+      "median": 3070941925,
+      "spread": 0.08878782460205593
+     },
+     "ipc": 2.110227250227143,
+     "taskClockMs": {
+      "median": 798.18,
+      "spread": 0.06078829336741084
+     },
+     "pageFaults": {
+      "median": 65869,
+      "spread": 0.025247081328090604
+     }
+    },
+    {
+     "label": "tsc-rs-fork@1t",
+     "runs": 3,
+     "instructions": {
+      "median": 2165656755,
+      "spread": 0.000021052736032492832
+     },
+     "cycles": {
+      "median": 965756248,
+      "spread": 0.03482714615582792
+     },
+     "ipc": 2.2424465381248044,
+     "taskClockMs": {
+      "median": 237.45,
+      "spread": 0.03672352074120879
+     },
+     "pageFaults": {
+      "median": 32824,
+      "spread": 0.0010967584694126249
+     }
+    },
+    {
+     "label": "tsrs@1t",
+     "runs": 3,
+     "instructions": {
+      "median": 1471612277,
+      "spread": 0.00020859230708904992
+     },
+     "cycles": {
+      "median": 581121715,
+      "spread": 0.023745104758303517
+     },
+     "ipc": 2.5323649745217316,
+     "taskClockMs": {
+      "median": 165.45,
+      "spread": 0.09120580235720764
+     },
+     "pageFaults": {
+      "median": 6165,
+      "spread": 0.00373073803730738
+     }
+    },
+    {
+     "label": "tsc7.1-beta@1t",
+     "runs": 3,
+     "instructions": {
+      "median": 4271858680,
+      "spread": 0.006015218883598462
+     },
+     "cycles": {
+      "median": 2084700846,
+      "spread": 0.0037438268492936562
+     },
+     "ipc": 2.0491470937888225,
+     "taskClockMs": {
+      "median": 550.71,
+      "spread": 0.026347805560095337
+     },
+     "pageFaults": {
+      "median": 44892,
+      "spread": 0.001826606076806558
+     }
+    }
+   ]
+  },
+  "clean": true
+ },
+ "id": "0bc1a3a9bee55b06"
+}

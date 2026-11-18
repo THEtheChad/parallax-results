@@ -1,0 +1,296 @@
+/* Tokens: the reference palette of the data-viz method (light and dark both selected, not flipped).
+   Light is the base; dark applies under the OS setting unless the page is stamped light, and always
+   under data-theme="dark". */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface-1: #fcfcfb;
+  --surface-2: #f3f2ef;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --accent: #2a78d6;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --good: #006300;
+  --critical: #d03b3b;
+  --same-band: rgba(11, 11, 11, 0.045);
+  --radius: 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --surface-2: #232321;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #3987e5;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --good: #0ca30c;
+    --critical: #e66767;
+    --same-band: rgba(255, 255, 255, 0.05);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface-1: #1a1a19;
+  --surface-2: #232321;
+  --text-primary: #f0efec;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #3987e5;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --good: #0ca30c;
+  --critical: #e66767;
+  --same-band: rgba(255, 255, 255, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+a {
+  color: var(--accent);
+}
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 24px;
+  padding: 20px 0 12px;
+}
+.header h1 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 600;
+}
+.header nav {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.header nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.header nav a[data-status="active"] {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.header .spacer {
+  flex: 1;
+}
+.lede {
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  max-width: 75ch;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+  margin: 0 0 16px;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.filters select,
+.theme select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  font: inherit;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.chip[aria-pressed="false"] {
+  color: var(--text-muted);
+  background: transparent;
+}
+.chip .key {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.chip[aria-pressed="false"] .key {
+  opacity: 0.35;
+}
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card h2 {
+  font-size: 15px;
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+.card .sub {
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.chart {
+  width: 100%;
+}
+.loading {
+  opacity: 0.5;
+}
+.empty {
+  color: var(--text-secondary);
+  padding: 24px 0;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+th,
+td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+}
+th {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+th button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+td.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+th.num {
+  text-align: right;
+}
+.call {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.call[data-call="faster"] {
+  color: var(--good);
+}
+.call[data-call="slower"] {
+  color: var(--critical);
+}
+.call[data-call="unresolved"],
+.call[data-call="too few rounds"] {
+  color: var(--text-muted);
+}
+.swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+dl.facts {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 4px 16px;
+  margin: 0;
+}
+dl.facts dt {
+  color: var(--text-secondary);
+}
+dl.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.notes li {
+  color: var(--text-secondary);
+}
+.prose {
+  max-width: 75ch;
+}
+.prose h2 {
+  font-size: 16px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
