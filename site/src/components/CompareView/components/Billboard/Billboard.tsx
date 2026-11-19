@@ -1,6 +1,7 @@
 // The answer first, as a billboard: which candidate stands best against the reference across the
-// machines in the selection, in words a visitor uses, and a race of every candidate's median ratio
-// with one pip per machine showing that machine's call.
+// machines in the selection, read top to bottom (the build, the figure, the reference it is measured
+// against, the evidence, then any caveat on its own line), and a race of every candidate's median
+// ratio with one pip per machine showing that machine's call.
 //
 // Honest by construction (src/data/verdict.ts): every machine gets one vote, its newest result, so
 // no single run decides the answer; a new contributor's slower run is one pip among the others. The
@@ -12,7 +13,7 @@ import { CopyButton } from "../../../CopyButton/CopyButton.tsx";
 import { Shape } from "../../../Shape/Shape.tsx";
 import { callText, fmtRatio, measureNoun, measureOf, platformName, plainSpeed, type Measure } from "../../../../data/format.ts";
 import type { Build, Call, Comparison, MetricInfo, Mode, ResultSummary } from "../../../../data/model.ts";
-import { standingOf, type Agreement, type Standing, type Tally } from "../../../../data/verdict.ts";
+import { standingOf, type Standing, type Tally } from "../../../../data/verdict.ts";
 
 export interface BillboardProps {
   kind: string;
@@ -82,11 +83,19 @@ function figureOf(s: Standing, measure: Measure): { number: string; word: string
   return { number: fmtRatio(s.median), word: `the ${measureNoun(measure)}` };
 }
 
-const CLOSING: Partial<Record<Agreement, string>> = {
-  mixed: "The machines disagree, so the figure is an estimate, not a call.",
-  unsettled: "Too few machines settle it, so the figure is an estimate, not a call.",
-  uncalled: "This metric is shown for context and gets no call.",
-};
+// The word joining the figure to the reference: "as fast as", "8% faster than", "0.93× the time of".
+const connectorOf = (word: string): string => (/^(as |about the same)/.test(word) ? "as" : /^the /.test(word) ? "of" : "than");
+
+// What a reader must know before trusting the figure, one short line each.
+function caveatsOf(s: Standing, here: number, measure: Measure): string[] {
+  const n = s.votes.length;
+  const out: string[] = [];
+  if (n < here) out.push(`Measured on only ${n} of the ${here} machines here.`);
+  if (s.agreement === "mixed") out.push(`The machines disagree (${tallyWords(s.tally, measure)}): the figure is the median, not a call.`);
+  if (s.agreement === "unsettled") out.push(`Too few machines settle it (${tallyWords(s.tally, measure)}): the figure is the median, not a call.`);
+  if (s.agreement === "uncalled") out.push("Shown for context: this metric gets no call.");
+  return out;
+}
 
 interface Lane {
   key: string;
@@ -123,6 +132,7 @@ export function Billboard(p: BillboardProps) {
   const n = leader?.votes.length ?? 0;
   // Machines with any candidate in this thread mode: a leader measured on fewer says so.
   const here = new Set(p.comparisons.map((c) => p.results.get(c.result)?.machine.id)).size;
+  const caveats = leader ? caveatsOf(leader, here, measure) : [];
 
   return (
     <section className="billboard" aria-labelledby="answer-h">
@@ -131,43 +141,61 @@ export function Billboard(p: BillboardProps) {
       </h1>
       {leader && leaderLane && figure ? (
         <div className="verdict">
+          {/* Read top to bottom: who, by how much, against what, then the evidence and its caveats. */}
           <div className="headline">
-            <p className="big">
-              <span className="figure" aria-hidden="true">
-                {figure.number}
-              </span>
-              <span className="word" aria-hidden="true">
-                {figure.word}
-              </span>
+            {candidateLeads ? (
+              <>
+                <p className="subject" style={{ ["--c" as string]: `var(--series-${leaderLane.slot})` }}>
+                  <Shape slot={leaderLane.slot} size={20} />
+                  <span className="label">{leaderLane.label}</span>
+                </p>
+                <p className="big">
+                  <span className="figure" aria-hidden="true">
+                    {figure.number}
+                  </span>
+                  <span className="word" aria-hidden="true">
+                    {figure.word}
+                  </span>
+                  <span className="sr-only">
+                    {leaderLane.label}: {speedOf(leader, measure)} {connectorOf(figure.word)} {refLabel}, the reference, {over(n)}.
+                  </span>
+                </p>
+                <p className="versus" aria-hidden="true">
+                  {connectorOf(figure.word)} <span className="who">{refLabel}</span>, the reference
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="subject" style={{ ["--c" as string]: "var(--reference)" }}>
+                  <span className="label">{refLabel}</span>
+                  <span className="tag">reference</span>
+                </p>
+                <p className="big">
+                  <span className="figure wordy">unbeaten</span>
+                </p>
+                <p className="versus">
+                  No candidate beat it on the median. Nearest: <span className="who">{leaderLane.label}</span>, {speedOf(leader, measure)}.
+                </p>
+              </>
+            )}
+            <div className="badges">
               <span className="call" data-call={["faster", "slower", "same"].includes(leader.agreement) ? leader.agreement : ""}>
                 {agreementText(leader, measure)}
               </span>
-            </p>
-            <p className="sentence">
-              {candidateLeads ? (
-                <>
-                  <span className="who">{leaderLane.label}</span> has the lowest median {p.metric.label} against {refLabel}:{" "}
-                  <strong>{speedOf(leader, measure)}</strong> {over(n)}.
-                </>
-              ) : (
-                <>
-                  No candidate beat <span className="who">{refLabel}</span> on the median. The nearest, <span className="who">{leaderLane.label}</span>, took{" "}
-                  <strong>{speedOf(leader, measure)}</strong> {over(n)}.
-                </>
-              )}
-              {p.metric.called && n > 1 ? ` It was ${tallyWords(leader.tally, measure)}.` : ""}
-              {n < here ? ` It was measured on only ${n} of the ${here} machines here.` : ""}
-              {CLOSING[leader.agreement] ? ` ${CLOSING[leader.agreement]}` : ""}
-            </p>
-            <div className="badges">
-              <span className="badge">median of {machines(n)}</span>
               {n > 1 ? (
                 <span className="badge">
-                  machines {fmtRatio(leader.low)}–{fmtRatio(leader.high)}
+                  median of {n}, range {fmtRatio(leader.low)}–{fmtRatio(leader.high)}
                 </span>
               ) : null}
               <span className="badge">{p.mode === "single" ? "1 thread" : "default threads"}</span>
             </div>
+            {caveats.length ? (
+              <ul className="caveats">
+                {caveats.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            ) : null}
           </div>
           <ol className="race" aria-label={`Every build, ${p.metric.label}, median ratio across machines, lowest first`}>
             {lanes.map((l, i) => {
@@ -229,11 +257,11 @@ export function Billboard(p: BillboardProps) {
       )}
       <div className="hero-foot">
         <span>
-          Each machine counts once, by its newest result{p.bothModes ? ", in default threads (the 1-thread runs are in the spread below)" : ""}.
           {p.metric.called
-            ? ` One pip per machine: ${PIP.faster} ${callText("faster", null, measure)}, ${PIP.slower} ${callText("slower", null, measure)}, ${PIP.same} same, ${PIP.unresolved} unresolved.`
-            : ""}{" "}
-          Across the selection: {p.scope.results} result{p.scope.results === 1 ? "" : "s"} from {machines(p.scope.machines)}, below.
+            ? `${PIP.faster} ${callText("faster", null, measure)}  ${PIP.slower} ${callText("slower", null, measure)}  ${PIP.same} same  ${PIP.unresolved} unresolved: one pip per machine, its newest result. `
+            : "Each machine counts once, by its newest result. "}
+          {p.bothModes ? "Default threads here; 1-thread runs are in the spread. " : ""}
+          {p.scope.results} result{p.scope.results === 1 ? "" : "s"} from {machines(p.scope.machines)} in the spread below.
         </span>
         <span className="spacer" />
         <CopyButton className="btn small primary" label="Copy link" text={() => window.location.href} />

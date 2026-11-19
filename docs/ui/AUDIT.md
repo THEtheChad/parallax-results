@@ -155,7 +155,7 @@ CallLabel             # the .call badge: faster, slower, same ±r, unresolved, t
 format                # site/src/data/format.ts: ratios, intervals, values, "in words", platform names, series slots
 build-index           # scripts/build-index.ts: build labels and grouping, what the data says
 CompareView
-Billboard             # CompareView's hero: h1, the figure, the sentence, badges, the race with a pip per machine, Copy link
+Billboard             # CompareView's hero: h1, the build, the figure, the reference it is against, badges, caveats, the race with a pip per machine, Copy link
 Filters               # incl. the phone's Filters button
 BuildChips            # Filters' "Builds shown" chips
 Spotlight             # one implementation lit across the billboard, chips, legend, chart and table
