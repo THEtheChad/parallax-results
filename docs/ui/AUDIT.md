@@ -15,6 +15,7 @@ configuration for parallax-results. Runs are reported in [audits/](./audits/).
 | 3 | [CONTRIBUTING.md](../../CONTRIBUTING.md) | In effect | The contributor's path, and what a result contains |
 | 4 | `site/src/styles.css` tokens and `site/src/theme.ts` | In effect. Not opened by reviewers; described in [Tokens](#tokens) | Palette (light and dark), series colours, type sizes, radius. No contrast test guards them yet |
 | 5 | Layout conventions (below) | Grown per run | Craft calls the documents above don't make |
+| 6 | [REFERENCES.md](./REFERENCES.md): reference sites and the standard (F1–F9, L1–L7) | Target, not yet built | The redesign. Until it lands, a gap between the site and this standard is the redesign's work, not an audit finding; once it lands, its tokens replace [Tokens](#tokens) and this row moves up |
 
 When two disagree, the lower number wins.
 
