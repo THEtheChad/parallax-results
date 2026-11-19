@@ -4,7 +4,7 @@
 // never the answer on its own. Machines are never averaged into one figure; the median only orders
 // candidates and names a typical ratio, and the tally of calls carries the evidence.
 
-import type { Call, Comparison, ResultSummary } from "./model.ts";
+import type { Build, Call, Comparison, ResultSummary } from "./model.ts";
 
 export interface Vote {
   comparison: Comparison;
@@ -77,4 +77,24 @@ export function standingOf(comparisons: Comparison[], results: Map<string, Resul
     tally,
     agreement: agreementOf(tally, called),
   };
+}
+
+// How widely a reference was measured against in a selection: its results and their machines.
+export function referenceCoverage(comparisons: Comparison[], results: Map<string, ResultSummary>, reference: string): { results: number; machines: number; newest: string } {
+  const rs = [...new Set(comparisons.filter((c) => c.reference === reference).map((c) => c.result))].flatMap((id) => results.get(id) ?? []);
+  return { results: rs.length, machines: new Set(rs.map((r) => r.machine.id)).size, newest: rs.reduce((d, r) => (r.date > d ? r.date : d), "") };
+}
+
+// The reference a selection opens on. The first build builds.json names a reference, when the
+// selection has one: the owner's choice. Otherwise the reference measured on the most machines (then
+// the most results, then the newest), so one contributor's repeat runs against another build cannot
+// take the page over.
+export function defaultReference(comparisons: Comparison[], builds: Map<string, Build>, results: Map<string, ResultSummary>): string | undefined {
+  const refs = [...new Set(comparisons.map((c) => c.reference))];
+  const rank = (r: string): number | null => builds.get(r)?.referenceRank ?? null;
+  const named = refs.filter((r) => rank(r) !== null).sort((a, b) => rank(a)! - rank(b)!);
+  if (named[0] !== undefined) return named[0];
+  return refs
+    .map((r) => ({ r, ...referenceCoverage(comparisons, results, r) }))
+    .sort((a, b) => b.machines - a.machines || b.results - a.results || b.newest.localeCompare(a.newest) || a.r.localeCompare(b.r))[0]?.r;
 }

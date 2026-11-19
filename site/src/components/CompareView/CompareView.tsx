@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { directionText, fmtPercent, implementationSlots, measureNoun, measureOf, platformName } from "../../data/format.ts";
 import { KIND_LABEL, METRICS, metricInfo, type Comparison, type Kind } from "../../data/model.ts";
 import { useIndex } from "../../data/useIndex.ts";
-import { machineMedian } from "../../data/verdict.ts";
+import { defaultReference, machineMedian, referenceCoverage } from "../../data/verdict.ts";
 import { ComparisonTable } from "../ComparisonTable/ComparisonTable.tsx";
 import { RatioChart, type ChartRow } from "../RatioChart/RatioChart.tsx";
 import { Section } from "../Section/Section.tsx";
@@ -48,11 +48,6 @@ export function lastCompare(): CompareSearch {
 }
 
 const unique = <T,>(xs: T[]): T[] => [...new Set(xs)];
-const mostCommon = (xs: string[]): string | undefined => {
-  const n = new Map<string, number>();
-  for (const x of xs) n.set(x, (n.get(x) ?? 0) + 1);
-  return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
-};
 
 export function CompareView() {
   const index = useIndex();
@@ -88,7 +83,14 @@ export function CompareView() {
     (c) => c.metric === metricKey && (threads === "both" || c.mode === threads) && (os === "all" || results.get(c.result)!.machine.platform === os),
   );
   const refs = unique(scoped.map((c) => c.reference));
-  const ref = search.ref && refs.includes(search.ref) ? search.ref : mostCommon(scoped.map((c) => c.reference));
+  // The reference: the link's, else the one builds.json names, else the one on the most machines.
+  const ref = search.ref && refs.includes(search.ref) ? search.ref : defaultReference(scoped, builds, results);
+  // Results against any other reference are not on screen (their ratios are against another build);
+  // the billboard says they exist and switches to them.
+  const otherRefs = refs
+    .filter((r) => r !== ref)
+    .map((r) => ({ key: r, label: builds.get(r)!.label, ...referenceCoverage(scoped, results, r) }))
+    .sort((a, b) => b.machines - a.machines || b.results - a.results || a.label.localeCompare(b.label));
   const withRef = scoped.filter((c) => c.reference === ref);
   const candidates = unique(withRef.map((c) => c.candidate)).sort((a, b) => builds.get(a)!.label.localeCompare(builds.get(b)!.label));
   const hidden = new Set((search.hide ?? "").split(",").filter(Boolean));
@@ -154,6 +156,8 @@ export function CompareView() {
           builds={builds}
           slots={slots}
           scope={{ results: resultCount, machines }}
+          otherRefs={otherRefs}
+          onReference={(r) => set({ ref: r, hide: undefined })}
           bothModes={threads === "both"}
           spot={spot}
           onSpot={setSpot}

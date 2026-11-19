@@ -29,6 +29,9 @@ export interface BillboardProps {
   scope: { results: number; machines: number };
   // Both thread modes are on screen, and the billboard weighs only the default one.
   bothModes: boolean;
+  // References the selection's other results were measured against, kept off screen.
+  otherRefs: { key: string; label: string; results: number; machines: number }[];
+  onReference: (key: string) => void;
   spot: string | null;
   onSpot: (implementation: string | null) => void;
 }
@@ -255,6 +258,21 @@ export function Billboard(p: BillboardProps) {
       ) : (
         <p className="sentence">Nothing to race in this selection: every build in it is hidden. Switch one back on below.</p>
       )}
+      {p.otherRefs.length ? (
+        <ul className="caveats other-refs" aria-label="Results against other references">
+          {p.otherRefs.map((o) => (
+            <li key={o.key}>
+              <span>
+                Also published against <span className="who">{o.label}</span>: {o.results} result{o.results === 1 ? "" : "s"} from {machines(o.machines)}, not
+                counted here.
+              </span>{" "}
+              <button type="button" className="btn small" onClick={() => p.onReference(o.key)}>
+                Show those
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="hero-foot">
         <span>
           {p.metric.called

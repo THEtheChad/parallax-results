@@ -73,3 +73,19 @@ test("comparisons: per candidate and metric, against the same-mode reference, wi
   assert.equal(new Set(index.comparisons.map((c) => c.id)).size, index.comparisons.length, "ids are unique");
   assert.equal(index.results[0]!.machine.id, "abcdef12");
 });
+
+test("builds: builds.json can name references, in its own order", () => {
+  const named = {
+    ...registry,
+    builds: [
+      { ...registry.builds[1]!, reference: true },
+      { ...registry.builds[0]!, reference: true },
+    ],
+  };
+  const index = buildIndex([{ file: "results/cli-bench/hono/x.json", result: cli }], named);
+  const rank = (key: string) => index.builds.find((b) => b.key === key)?.referenceRank;
+  assert.equal(rank("tsrs@0.25.0"), 0);
+  assert.equal(rank("tsc 7@7.0.2"), 1);
+  assert.equal(rank("sha:cccccccccccc"), null, "an unregistered build is never named");
+  assert.equal(buildIndex([{ file: "x.json", result: cli }], registry).builds.every((b) => b.referenceRank === null), true, "none named by default");
+});

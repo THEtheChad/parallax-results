@@ -26,7 +26,7 @@ every route is `#/…` under the site's base.
 
 | Surface | Route | State | Scenarios |
 |---|---|---|---|
-| Compare: billboard, filters, build chips, ratio chart, table | `#/` with `kind`, `project`, `metric`, `threads`, `os`, `ref`, `hide` | built | yes: real (four viewports, a keyboard walk, a sort, every build hidden, a stale shared link), empty, one, many (command line and language server, light and dark), filtered, no candidate beating the reference, two journeys |
+| Compare: billboard, filters, build chips, ratio chart, table | `#/` with `kind`, `project`, `metric`, `threads`, `os`, `ref`, `hide` | built | yes: real (four viewports, a keyboard walk, a sort, every build hidden, a stale shared link), empty, one, many (command line and language server, light and dark), filtered, no candidate beating the reference, two references, two journeys |
 | Ratio chart tooltip | Compare, on hover (on a touch screen, while a finger is on a dot) | built | yes: real, desktop (hover) and phone (press) |
 | Results list | `#/results` | built | yes: real, empty, one, many |
 | Result | `#/result/:id` | built | yes: real (light, and dark through the theme journey), an edge-case result, a noisy one, a language-server one, a missing id |
@@ -104,6 +104,7 @@ The data sets, each served from the same production build under its own path:
 | `real` | real | `results/` as `pnpm build` indexes it (at the time of writing: two command-line results, hono and umami, one Linux machine) |
 | `empty` | stub | No results |
 | `one` | stub | One command-line result: `fixture-app` on a Linux fixture machine, three candidates, both thread modes |
+| `refs` | stub | Six results on `fixture-app`: three machines against the usual reference, and one contributor's three runs on a fourth machine against another (more comparisons, fewer machines) |
 | `many` | stub | Seven results: `fixture-app` on Linux, macOS and Windows fixture machines; `fixture-lib`; command-line and language-server benches; every call (faster, slower, same ±r, unresolved, too few rounds); an unregistered binary; a candidate that failed every round; unsettled results with notes and rejected rounds; long project, build and CPU labels; Low Power Mode on battery at lowered priority; a project not in the suite with local changes |
 
 The stub numbers are consistent the way Parallax makes them: each interval is
@@ -248,6 +249,10 @@ cite as precedent. Each run adds what it settles.
   "machines disagree" or "not settled" beside it. When no candidate's median
   beats the reference, it says so. The race shows one pip per machine; the
   chart's rows use the same order.
+- **The reference.** Compare opens on the reference a link names, else the
+  first that `builds.json` names (`"reference": true`), else the one measured
+  on the most machines. Results against another reference are never mixed in;
+  the billboard lists them, each with "Show those".
 - **Words follow the call and the measure.** "faster"/"slower" for time,
   "lower"/"higher" for CPU time and memory; "about the same" for same; "~" on
   any estimate without a settled call.

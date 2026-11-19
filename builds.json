@@ -1,6 +1,6 @@
 {
   "schema": "parallax.builds/1",
-  "description": "Known builds: each implementation and version, with the sha256 of every binary of it (one per platform, or one per local build where a build is not reproducible). A result's binaries are matched here by sha256; a binary not listed still counts, under its hash.",
+  "description": "Known builds: each implementation and version, with the sha256 of every binary of it (one per platform, or one per local build where a build is not reproducible). A result's binaries are matched here by sha256; a binary not listed still counts, under its hash. \"reference\": true on a build makes it the reference the site's Compare opens on (the first such build a selection has); with none, it opens on the reference measured on the most machines.",
   "builds": [
     {
       "implementation": "tsc 7",

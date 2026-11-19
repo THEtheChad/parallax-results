@@ -73,7 +73,9 @@ means none do, and *Unverified* means the evidence is missing.
   answer. It speaks plainly only when most machines make the same call and none
   makes another; otherwise it shows an estimate and the tally. It says when no
   candidate beats the reference, reports unresolved results as unresolved,
-  never averages machines into one figure, and ranks its rows by speed.
+  never averages machines into one figure, and ranks its rows by speed. Its
+  reference is the owner's choice where one is named, else the one measured on
+  the most machines; results against another reference are named, not mixed in.
 - **F2. Every chart says what it shows.** Next to each chart: the metric and
   project, the reference, the direction for that metric ("lower is faster";
   for memory, "lower uses less memory") and what one mark is.

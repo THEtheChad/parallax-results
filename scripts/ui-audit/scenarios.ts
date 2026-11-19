@@ -214,6 +214,7 @@ const RESULTS_TITLE = "the sessions";
 const NOT_FOUND = "end of side A";
 const published = (n: number): string => `${n} published result${n === 1 ? "" : "s"}`;
 const BETA = buildLabel("beta");
+const BASE_KEY = "alpha@1.0.0-fixture";
 const ALPHA_NEXT = buildLabel("alphaNext");
 const LONG_LABEL = buildLabel("betaLong");
 
@@ -668,6 +669,41 @@ export const scenarios: readonly Scenario[] = [
     route: () => `/result/${RESULTS.appLsp.id}`,
     viewports: ["desktop"],
     steps: still(() => ({ nav: null, heading: fixtureHeading(RESULTS.appLsp), title: RESULT_TITLE, text: ["session: memory", "typing: completion p95", "MB"] })),
+  },
+  // ── Two references: three machines against one, one contributor's three runs against another ───
+  {
+    // The default reference is the one on the most machines, not the one with the most comparisons;
+    // the billboard says the other exists, and "Show those" switches to it.
+    id: "compare-other-reference~stub",
+    persona: "visitor",
+    data: "refs",
+    route: () => "/",
+    viewports: ["desktop", "phone"],
+    steps: [
+      {
+        name: "page",
+        expect: () => ({
+          nav: "Compare",
+          ...stubCompare("wall time"),
+          text: [stubCompare("wall time").reference, "Also published against", buildLabel("alphaNext"), "3 results from 1 machine, not counted here"],
+          chartDots: dots("refs", (c) => appWall(c) && c.reference === BASE_KEY),
+        }),
+      },
+      {
+        name: "show-other-reference",
+        act: async (page) => {
+          await page.getByRole("button", { name: "Show those" }).click();
+          await page.waitForURL((u) => u.hash.includes("ref="));
+        },
+        expect: () => ({
+          route: /^\/\?ref=/,
+          nav: "Compare",
+          ...stubCompare("wall time"),
+          text: [`1× = ${buildLabel("alphaNext")}`, "Also published against", "3 results from 3 machines, not counted here"],
+          chartDots: dots("refs", (c) => appWall(c) && c.reference !== BASE_KEY),
+        }),
+      },
+    ],
   },
   // ── Journey: a chart dot opens its result; Back keeps the view; a chip hides a build ────────────
   {

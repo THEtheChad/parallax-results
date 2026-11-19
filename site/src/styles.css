@@ -787,6 +787,16 @@ tbody tr[data-spot="true"] {
   padding-left: 12px;
   border-left: 3px solid var(--amber);
 }
+/* Results against another reference: below the verdict, one line each, with a way to them. */
+.other-refs {
+  margin-top: 18px;
+}
+.other-refs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
 .big .word {
   font-family: var(--script);
   font-size: clamp(32px, 4.5vw, 48px);
