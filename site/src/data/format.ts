@@ -54,7 +54,8 @@ export function implementationSlots(builds: Build[]): Map<string, number> {
 export const escapeHtml = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-// The ratio in words a visitor uses: "3.1× as fast", "12% slower", "2.0× less memory". Only a
+// The ratio in words a visitor uses: "3.1× as fast", "12% slower", "1.4× as long", "2.0× less
+// memory" (a large slowdown is "as long", not "1.4× slower", which reads both ways). Only a
 // settled call (faster or slower) gets plain words; "same" reads "about the same", and an estimate
 // without a settled call (unresolved, too few rounds, an uncalled metric) is marked with "~".
 export function plainSpeed(r: number, measure: Measure): string {
@@ -62,7 +63,7 @@ export function plainSpeed(r: number, measure: Measure): string {
   const less = r < 1;
   const big = less ? 1 / r : r;
   const amount = big < 1.1 ? `${Math.max(1, Math.round((big - 1) * 100))}%` : `${big.toFixed(1)}×`;
-  if (measure === "time") return less ? (big < 1.1 ? `${amount} faster` : `${amount} as fast`) : `${amount} slower`;
+  if (measure === "time") return less ? (big < 1.1 ? `${amount} faster` : `${amount} as fast`) : big < 1.1 ? `${amount} slower` : `${amount} as long`;
   return `${amount} ${less ? "less" : "more"} ${measure === "cpu" ? "CPU" : "memory"}`;
 }
 

@@ -67,12 +67,13 @@ means none do, and *Unverified* means the evidence is missing.
 
 - **F1. The answer first.** Before the filters, the first screen of Compare
   states the project, metric, reference and machine scope, and shows, in words
-  and in a hero, the lowest observed time and what it is relative to the
-  reference ("N× as fast", with both sides' times). It says "lowest observed",
-  not "fastest", unless a comparison establishes that. It reports unresolved
-  results as unresolved, never averages machines, and ranks its rows by speed.
-  A hero race of absolute times stays inside one result: only sides measured in
-  the same rounds on the same machine race each other.
+  and in a hero, which candidate stands best against the reference and by how
+  much ("N× as fast"). Every machine gets one vote, its newest result, so no
+  single run (a new contributor's, or a re-run on an odd day) decides the
+  answer. It speaks plainly only when most machines make the same call and none
+  makes another; otherwise it shows an estimate and the tally. It says when no
+  candidate beats the reference, reports unresolved results as unresolved,
+  never averages machines into one figure, and ranks its rows by speed.
 - **F2. Every chart says what it shows.** Next to each chart: the metric and
   project, the reference, the direction for that metric ("lower is faster";
   for memory, "lower uses less memory") and what one mark is.
@@ -174,10 +175,10 @@ dark) and the source.
 
 | | Criterion | Before | After | Notes on after |
 |---|---|---|---|---|
-| F1 | The answer first | Partly | Yes | The billboard: the lowest observed figure in one result, in words and as a race, with the reference and scope, rows in speed order; on a phone's first screen |
+| F1 | The answer first | Partly | Yes | The billboard: the candidate with the lowest median across machines (one vote each, the newest result), in words and as a race with one pip per machine's call, the reference and scope; a plain claim only when the machines agree; rows in the same order; on a phone's first screen |
 | F2 | Every chart says what it shows | Partly | Yes | The sub line names metric, project, reference, direction and the mark; memory reads "lower uses less memory" (it used to inherit "lower is faster") |
 | F3 | Uncertainty visible and explained | Partly | Mostly | Interval, confidence, rounds and call in the table as well as the tooltip; the band only when resolutions agree; one disclosure explains. The explanation is beside the chart, not beside every number |
-| F4 | Sources one step away | Mostly | Yes | A chart mark (a second tap on a phone), a table row's link and the billboard's "Open this result" each reach the result |
+| F4 | Sources one step away | Mostly | Yes | A chart mark (a second tap on a phone) and a table row's link each reach the result |
 | F5 | Share and export | Partly | Mostly | Copy link (it says "Copied ✓"), and CSV and JSON of the table: the rows on screen, in the order on screen. The table's sort is not in the link. Not yet: share images, README badges |
 | F6 | Freshness | Partly | Yes | "Latest run" in the telemetry on every page; the Results list, newest first, is the changelog |
 | F7 | A comparison builder | Partly | Mostly | Chips, kept in the link (reload, Back) and by the Pages nav's Compare. The spotlight follows hover on chips, race lanes, marks and table rows, and focus on chips and table rows; it has no tap of its own |

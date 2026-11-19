@@ -561,8 +561,32 @@ export const scenarios: readonly Scenario[] = [
     steps: still(() => ({
       nav: "Compare",
       ...stubCompare("wall time"),
-      text: ["3 results from 3 machines", "unresolved", "slower", "same ±5%", buildLabel("gammaLocal"), stubCompare("wall time").reference],
+      text: [
+        "3 results from 3 machines",
+        "unresolved",
+        "slower",
+        "same ±5%",
+        buildLabel("gammaLocal"),
+        "measured on only 1 of the 3 machines",
+        "Each machine counts once",
+        stubCompare("wall time").reference,
+      ],
       chartDots: dots("many", appWall),
+    })),
+  },
+  {
+    // No candidate beats the reference: the billboard says so, names the nearest, and makes no
+    // "fastest" claim. One machine (macOS), its "same" build hidden, leaves one slower candidate.
+    id: "compare-reference-leads~stub",
+    persona: "visitor",
+    data: "many",
+    route: () => "/?os=darwin&hide=beta@0.9.0-fixture",
+    viewports: ["desktop", "phone"],
+    steps: still(() => ({
+      nav: "Compare",
+      ...stubCompare("wall time"),
+      text: ["No candidate beat", "1.2× as long", "slower · 1 machine", stubCompare("wall time").reference],
+      chartDots: dots("many", (c) => appWall(c) && c.result === RESULTS.appMac.id && c.candidate !== "beta@0.9.0-fixture"),
     })),
   },
   {

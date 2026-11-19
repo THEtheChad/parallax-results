@@ -1,5 +1,5 @@
-// The compare page. First the answer (the billboard: the selection's lowest observed time, raced
-// against the others in one result), then the filters and build chips (all in the URL, so a view is
+// The compare page. First the answer (the billboard: which candidate stands best against the
+// reference across the selection's machines, one vote per machine), then the filters and build chips (all in the URL, so a view is
 // a link), the ratio chart across every result, and its table. Hovering, focusing or tapping an
 // implementation anywhere spotlights it everywhere.
 
@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { directionText, fmtPercent, implementationSlots, measureNoun, measureOf, platformName } from "../../data/format.ts";
 import { KIND_LABEL, METRICS, metricInfo, type Comparison, type Kind } from "../../data/model.ts";
 import { useIndex } from "../../data/useIndex.ts";
+import { machineMedian } from "../../data/verdict.ts";
 import { ComparisonTable } from "../ComparisonTable/ComparisonTable.tsx";
 import { RatioChart, type ChartRow } from "../RatioChart/RatioChart.tsx";
 import { Section } from "../Section/Section.tsx";
@@ -25,8 +26,6 @@ export interface CompareSearch {
   os?: string;
   // Build keys hidden from the chart, comma-separated.
   hide?: string;
-  // The result the billboard races (defaults to the newest in the selection).
-  run?: string;
 }
 
 const route = getRouteApi("/");
@@ -53,11 +52,6 @@ const mostCommon = (xs: string[]): string | undefined => {
   const n = new Map<string, number>();
   for (const x of xs) n.set(x, (n.get(x) ?? 0) + 1);
   return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
-};
-const median = (xs: number[]): number => {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
 };
 
 export function CompareView() {
@@ -101,8 +95,9 @@ export function CompareView() {
   const shown = withRef.filter((c) => !hidden.has(c.candidate));
 
   const rowKey = useCallback((c: Comparison) => (threads === "both" ? `${c.candidate}|${c.mode}` : c.candidate), [threads]);
-  // Rows in speed order: the lowest median ratio across the row's results first. The median only
-  // orders the rows; every result keeps its own dot.
+  // Rows in speed order: the lowest median ratio across machines first, each machine counted once
+  // by its newest result (as the billboard weighs them). The median only orders the rows; every
+  // result keeps its own dot.
   const rows = useMemo<ChartRow[]>(() => {
     const byRow = new Map<string, Comparison[]>();
     for (const c of shown) byRow.set(rowKey(c), [...(byRow.get(rowKey(c)) ?? []), c]);
@@ -114,24 +109,18 @@ export function CompareView() {
           key,
           label: `${b.label}${mode === "single" ? " · 1 thread" : ""}`,
           implementation: b.implementation,
-          order: median(list.map((c) => c.ratio.estimate)),
+          order: machineMedian(list, results),
         };
       })
       .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label))
       .map(({ key, label, implementation }) => ({ key, label, implementation }));
-  }, [shown, rowKey, builds]);
+  }, [shown, rowKey, builds, results]);
   // A "same" band is drawn only when every comparison on screen shares one resolution.
   const resolutions = unique(shown.map((c) => c.sameWithin));
   const sameWithin = resolutions.length === 1 ? resolutions[0]! : null;
   const machines = unique(shown.map((c) => results.get(c.result)!.machine.id)).length;
   const resultCount = unique(shown.map((c) => c.result)).length;
   const confidences = unique(shown.map((c) => fmtPercent(c.ratio.confidence)));
-
-  // The billboard races one result: the chosen run, else the newest in the selection.
-  const runs = unique(withRef.map((c) => c.result))
-    .map((id) => results.get(id)!)
-    .sort((a, b) => b.date.localeCompare(a.date) || a.machine.id.localeCompare(b.machine.id));
-  const run = runs.find((r) => r.id === search.run) ?? runs[0];
 
   const onSelect = useCallback((id: string) => navigate({ to: "/result/$id", params: { id } }), [navigate]);
 
@@ -153,17 +142,15 @@ export function CompareView() {
 
   return (
     <>
-      {metric && run ? (
+      {metric ? (
         <Billboard
           kind={KIND_LABEL[kind]}
           project={project ?? "–"}
           metric={metric}
           reference={ref}
-          comparisons={withRef.filter((c) => c.result === run.id && !hidden.has(c.candidate) && (threads === "single" ? c.mode === "single" : c.mode === "default"))}
+          comparisons={shown.filter((c) => (threads === "single" ? c.mode === "single" : c.mode === "default"))}
           mode={threads === "single" ? "single" : "default"}
-          run={run}
-          runs={runs}
-          onRun={(id) => set({ run: id === runs[0]?.id ? undefined : id })}
+          results={results}
           builds={builds}
           slots={slots}
           scope={{ results: resultCount, machines }}
@@ -194,7 +181,7 @@ export function CompareView() {
           })}
           spot={spot}
           onSpot={setSpot}
-          onChange={(patch) => set({ ...patch, run: undefined })}
+          onChange={set}
           onToggle={(key) => {
             const next = new Set(hidden);
             if (next.has(key)) next.delete(key);

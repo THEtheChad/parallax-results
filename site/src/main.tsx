@@ -31,7 +31,6 @@ function compareSearch(raw: Record<string, unknown>): CompareSearch {
     ref: str(raw.ref),
     os: str(raw.os),
     hide: str(raw.hide),
-    run: str(raw.run),
   };
 }
 

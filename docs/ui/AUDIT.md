@@ -26,7 +26,7 @@ every route is `#/…` under the site's base.
 
 | Surface | Route | State | Scenarios |
 |---|---|---|---|
-| Compare: billboard, filters, build chips, ratio chart, table | `#/` with `kind`, `project`, `metric`, `threads`, `os`, `ref`, `hide`, `run` | built | yes: real (four viewports, a keyboard walk, a sort, every build hidden, a stale shared link), empty, one, many (command line and language server, light and dark), filtered, two journeys |
+| Compare: billboard, filters, build chips, ratio chart, table | `#/` with `kind`, `project`, `metric`, `threads`, `os`, `ref`, `hide` | built | yes: real (four viewports, a keyboard walk, a sort, every build hidden, a stale shared link), empty, one, many (command line and language server, light and dark), filtered, no candidate beating the reference, two journeys |
 | Ratio chart tooltip | Compare, on hover (on a touch screen, while a finger is on a dot) | built | yes: real, desktop (hover) and phone (press) |
 | Results list | `#/results` | built | yes: real, empty, one, many |
 | Result | `#/result/:id` | built | yes: real (light, and dark through the theme journey), an edge-case result, a noisy one, a language-server one, a missing id |
@@ -155,7 +155,7 @@ CallLabel             # the .call badge: faster, slower, same ±r, unresolved, t
 format                # site/src/data/format.ts: ratios, intervals, values, "in words", platform names, series slots
 build-index           # scripts/build-index.ts: build labels and grouping, what the data says
 CompareView
-Billboard             # CompareView's hero: h1, the figure, the sentence, badges, the race, run picker, Copy link
+Billboard             # CompareView's hero: h1, the figure, the sentence, badges, the race with a pip per machine, Copy link
 Filters               # incl. the phone's Filters button
 BuildChips            # Filters' "Builds shown" chips
 Spotlight             # one implementation lit across the billboard, chips, legend, chart and table
@@ -239,11 +239,15 @@ cite as precedent. Each run adds what it settles.
 - **Numbers.** Tabular figures, right-aligned in tables, units dimmer than the
   number. Ratios, intervals and values are written by `format.ts` only
   (`0.32×`, `0.32× (0.31×–0.36×)`, `340 ms`), and "in words" too (`3.1× as
-  fast`, `1.2× slower`).
-- **Answer first.** Compare opens with the billboard: one result raced, the
-  lowest observed figure among every side (the reference included), never
-  "fastest". Its big figure is plain words ("3.1× as fast") only for a settled
-  call; otherwise the estimated ratio, with the call beside it.
+  fast`, `8% slower`, `1.4× as long`).
+- **Answer first.** Compare opens with the billboard: the candidate with the
+  lowest median ratio across the selection's machines, each machine counted
+  once by its newest result (`src/data/verdict.ts`), so no single run decides
+  it. Its big figure is plain words ("3.1× as fast") only when most machines
+  make that call and none makes another; otherwise the median ratio, with
+  "machines disagree" or "not settled" beside it. When no candidate's median
+  beats the reference, it says so. The race shows one pip per machine; the
+  chart's rows use the same order.
 - **Words follow the call and the measure.** "faster"/"slower" for time,
   "lower"/"higher" for CPU time and memory; "about the same" for same; "~" on
   any estimate without a settled call.
