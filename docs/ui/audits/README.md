@@ -1,0 +1,3 @@
+# UI audit reports
+
+Each run of the `ui-audit` skill ([../AUDIT.md](../AUDIT.md)) leaves a report here, `<date>-<scope>.md`, and beside it the directory `<date>-<scope>/` that holds its evidence: `NOTES.md` (the capture log), the reviewer brief, the reviewers' raw answers, `manifest.json`, the triage, the verification, and the cropped before/after screenshots that a fix cites. Full captures are not committed; they stay in `scripts/ui-audit/runs/`, which is gitignored. Every committed crop of a `~stub` cell is captioned "synthetic fixture data, not measurements": those pages are drawn from the made-up results in `scripts/ui-audit/fixtures.ts`, and a crop must never be mistaken for a published result.
