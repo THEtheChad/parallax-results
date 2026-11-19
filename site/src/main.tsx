@@ -4,10 +4,17 @@ import { createRoot } from "react-dom/client";
 import { About } from "./components/About/About.tsx";
 import { CompareView, type CompareSearch, type Threads } from "./components/CompareView/CompareView.tsx";
 import { Layout } from "./components/Layout/Layout.tsx";
+import { Loading } from "./components/Loading/Loading.tsx";
+import { NotFound } from "./components/NotFound/NotFound.tsx";
 import { ResultsList } from "./components/ResultsList/ResultsList.tsx";
 import { ResultView } from "./components/ResultView/ResultView.tsx";
 import type { Kind } from "./data/model.ts";
 import { applyTheme, storedTheme } from "./theme.ts";
+// The house faces, self-hosted (no font CDN): Geist Mono for text and figures, Yellowtail for the
+// neon section words, Cedarville Cursive for captions. Latin subsets only; each swaps in when loaded.
+import "@fontsource-variable/geist-mono/wght.css";
+import "@fontsource/yellowtail/latin-400.css";
+import "@fontsource/cedarville-cursive/latin-400.css";
 import "./styles.css";
 
 const str = (v: unknown): string | undefined => (typeof v === "string" && v ? v : undefined);
@@ -24,6 +31,7 @@ function compareSearch(raw: Record<string, unknown>): CompareSearch {
     ref: str(raw.ref),
     os: str(raw.os),
     hide: str(raw.hide),
+    run: str(raw.run),
   };
 }
 
@@ -35,7 +43,15 @@ const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: "/about"
 
 const routeTree = rootRoute.addChildren([compareRoute, resultsRoute, resultRoute, aboutRoute]);
 // Hash history: a static host serves index.html for every view without rewrite rules.
-const router = createRouter({ routeTree, history: createHashHistory(), scrollRestoration: true });
+// The router suspends each page in its own boundary, so its pending and not-found components are
+// what a visitor sees while the index loads and at an unknown address.
+const router = createRouter({
+  routeTree,
+  history: createHashHistory(),
+  scrollRestoration: true,
+  defaultPendingComponent: Loading,
+  defaultNotFoundComponent: NotFound,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

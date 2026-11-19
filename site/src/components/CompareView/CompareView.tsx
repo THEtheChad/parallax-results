@@ -1,13 +1,17 @@
-// The compare page: one row of filters (all in the URL, so a view is a link), the ratio chart, and
-// its table. Changing a filter keeps the chart and animates it to the new selection.
+// The compare page. First the answer (the billboard: the selection's lowest observed time, raced
+// against the others in one result), then the filters and build chips (all in the URL, so a view is
+// a link), the ratio chart across every result, and its table. Hovering, focusing or tapping an
+// implementation anywhere spotlights it everywhere.
 
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo } from "react";
-import { fmtPercent, implementationSlots, platformName } from "../../data/format.ts";
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
+import { useCallback, useMemo, useState } from "react";
+import { directionText, fmtPercent, implementationSlots, platformName } from "../../data/format.ts";
 import { KIND_LABEL, METRICS, metricInfo, type Comparison, type Kind } from "../../data/model.ts";
 import { useIndex } from "../../data/useIndex.ts";
-import { ComparisonTable } from "../ComparisonTable/ComparisonTable.tsx";
+import { ComparisonTable, comparisonRecords } from "../ComparisonTable/ComparisonTable.tsx";
 import { RatioChart, type ChartRow } from "../RatioChart/RatioChart.tsx";
+import { Section } from "../Section/Section.tsx";
+import { Billboard } from "./components/Billboard/Billboard.tsx";
 import { Filters } from "./components/Filters/Filters.tsx";
 
 export type Threads = "both" | "default" | "single";
@@ -21,6 +25,8 @@ export interface CompareSearch {
   os?: string;
   // Build keys hidden from the chart, comma-separated.
   hide?: string;
+  // The result the billboard races (defaults to the newest in the selection).
+  run?: string;
 }
 
 const route = getRouteApi("/");
@@ -31,6 +37,25 @@ const mostCommon = (xs: string[]): string | undefined => {
   for (const x of xs) n.set(x, (n.get(x) ?? 0) + 1);
   return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
 };
+const median = (xs: number[]): number => {
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
+};
+
+function download(name: string, type: string, text: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const csvCell = (v: unknown): string => {
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
 
 export function CompareView() {
   const index = useIndex();
@@ -40,6 +65,7 @@ export function CompareView() {
     (patch: Partial<CompareSearch>) => navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true, resetScroll: false }),
     [navigate],
   );
+  const [spot, setSpot] = useState<string | null>(null);
 
   const builds = useMemo(() => new Map(index.builds.map((b) => [b.key, b])), [index]);
   const results = useMemo(() => new Map(index.results.map((r) => [r.id, r])), [index]);
@@ -70,89 +96,185 @@ export function CompareView() {
   const shown = withRef.filter((c) => !hidden.has(c.candidate));
 
   const rowKey = useCallback((c: Comparison) => (threads === "both" ? `${c.candidate}|${c.mode}` : c.candidate), [threads]);
+  // Rows in speed order: the lowest median ratio across the row's results first. The median only
+  // orders the rows; every result keeps its own dot.
   const rows = useMemo<ChartRow[]>(() => {
-    const keys = unique(shown.map(rowKey));
-    return keys
-      .map((key) => {
+    const byRow = new Map<string, Comparison[]>();
+    for (const c of shown) byRow.set(rowKey(c), [...(byRow.get(rowKey(c)) ?? []), c]);
+    return [...byRow.entries()]
+      .map(([key, list]) => {
         const [build, mode] = key.split("|");
         const b = builds.get(build!)!;
-        return { key, label: `${b.label}${mode === "single" ? " · 1 thread" : ""}`, implementation: b.implementation, slot: slots.get(b.implementation) ?? 9 };
+        return {
+          key,
+          label: `${b.label}${mode === "single" ? " · 1 thread" : ""}`,
+          implementation: b.implementation,
+          order: median(list.map((c) => c.ratio.estimate)),
+        };
       })
-      .sort((a, b) => a.slot - b.slot || a.label.localeCompare(b.label))
+      .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label))
       .map(({ key, label, implementation }) => ({ key, label, implementation }));
-  }, [shown, rowKey, builds, slots]);
-  const sameWithin = mostCommon(shown.filter((c) => c.sameWithin !== null).map((c) => String(c.sameWithin)));
+  }, [shown, rowKey, builds]);
+  // A "same" band is drawn only when every comparison on screen shares one resolution.
+  const resolutions = unique(shown.map((c) => c.sameWithin));
+  const sameWithin = resolutions.length === 1 ? resolutions[0]! : null;
   const machines = unique(shown.map((c) => results.get(c.result)!.machine.id)).length;
   const resultCount = unique(shown.map((c) => c.result)).length;
   const confidences = unique(shown.map((c) => fmtPercent(c.ratio.confidence)));
 
+  // The billboard races one result: the chosen run, else the newest in the selection.
+  const runs = unique(withRef.map((c) => c.result))
+    .map((id) => results.get(id)!)
+    .sort((a, b) => b.date.localeCompare(a.date) || a.machine.id.localeCompare(b.machine.id));
+  const run = runs.find((r) => r.id === search.run) ?? runs[0];
+
   const onSelect = useCallback((id: string) => navigate({ to: "/result/$id", params: { id } }), [navigate]);
 
-  if (!index.comparisons.length) return <p className="empty">No results have been published yet.</p>;
+  if (!index.comparisons.length) {
+    return (
+      <div className="state">
+        <h1>blank tape</h1>
+        <p>No results have been published yet. Be the first: run the suite on your machine and open a pull request.</p>
+        <div className="actions">
+          <Link className="btn primary" to="/about" hash="contribute">
+            Run it on your machine
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const refLabel = ref ? builds.get(ref)!.label : "–";
+  const exportRecords = () => (metric ? comparisonRecords(shown, builds, results, metric) : []);
 
   return (
     <>
-      <p className="lede">
-        Each dot is one published result: a candidate build's time divided by the reference's, measured in the same rounds on the same
-        machine, with its interval. Below 1 is faster. Results from different machines are never mixed into one number; their spread is
-        the evidence.
-      </p>
-      <Filters
-        kinds={kinds.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
-        kind={kind}
-        projects={projects}
-        project={project}
-        metrics={metrics}
-        metric={metricKey}
-        threads={threads}
-        oses={oses.map((o) => ({ value: o, label: platformName(o) }))}
-        os={os}
-        refs={refs.map((r) => ({ value: r, label: builds.get(r)!.label }))}
-        reference={ref}
-        candidates={candidates.map((key) => {
-          const b = builds.get(key)!;
-          return { key, label: b.label, slot: slots.get(b.implementation) ?? 5, shown: !hidden.has(key) };
-        })}
-        onChange={set}
-        onToggle={(key) => {
-          const next = new Set(hidden);
-          if (next.has(key)) next.delete(key);
-          else next.add(key);
-          set({ hide: [...next].join(",") || undefined });
-        }}
-      />
+      {metric && run ? (
+        <Billboard
+          kind={KIND_LABEL[kind]}
+          project={project ?? "–"}
+          metric={metric}
+          reference={ref}
+          comparisons={withRef.filter((c) => c.result === run.id && !hidden.has(c.candidate) && (threads === "single" ? c.mode === "single" : c.mode === "default"))}
+          mode={threads === "single" ? "single" : "default"}
+          run={run}
+          runs={runs}
+          onRun={(id) => set({ run: id === runs[0]?.id ? undefined : id })}
+          builds={builds}
+          slots={slots}
+          scope={{ results: resultCount, machines }}
+          spot={spot}
+          onSpot={setSpot}
+        />
+      ) : (
+        <h1 className="kicker">Compare · {project}</h1>
+      )}
+
+      <Section n="01" word="tune in" id="filters" aside="every choice is in the link">
+        <Filters
+          kinds={kinds.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
+          kind={kind}
+          projects={projects}
+          project={project}
+          metrics={metrics}
+          metric={metricKey}
+          threads={threads}
+          oses={oses.map((o) => ({ value: o, label: platformName(o) }))}
+          os={os}
+          refs={refs.map((r) => ({ value: r, label: builds.get(r)!.label }))}
+          reference={ref}
+          candidates={candidates.map((key) => {
+            const b = builds.get(key)!;
+            return { key, label: b.label, implementation: b.implementation, slot: slots.get(b.implementation) ?? 5, shown: !hidden.has(key) };
+          })}
+          spot={spot}
+          onSpot={setSpot}
+          onChange={(patch) => set({ ...patch, run: undefined })}
+          onToggle={(key) => {
+            const next = new Set(hidden);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            set({ hide: [...next].join(",") || undefined });
+          }}
+        />
+      </Section>
+
       {metric ? (
         <>
-          <section className="card">
-            <h2>
-              {metric.label} · {project} · against {ref ? builds.get(ref)!.label : "–"}
-            </h2>
-            <p className="sub">
-              {resultCount} result{resultCount === 1 ? "" : "s"} from {machines} machine{machines === 1 ? "" : "s"}
-              {confidences.length ? ` · ${confidences.join(", ")} intervals` : ""}
-              {metric.called ? "" : " · shown for context; this metric gets no call"}
-            </p>
-            {rows.length ? (
-              <RatioChart
-                comparisons={shown}
-                rows={rows}
-                rowOf={rowKey}
-                builds={builds}
-                results={results}
-                slots={slots}
-                metric={metric}
-                sameWithin={sameWithin === undefined ? null : Number(sameWithin)}
-                onSelect={onSelect}
-              />
-            ) : (
-              <p className="empty">Nothing left to show: every build is hidden.</p>
-            )}
-          </section>
-          <section className="card">
-            <h2>Table</h2>
-            <p className="sub">The same comparisons, with each side's own figure.</p>
-            <ComparisonTable comparisons={shown} builds={builds} results={results} metric={metric} />
-          </section>
+          <Section
+            n="02"
+            word="the spread"
+            id="chart"
+            aside={`${resultCount} result${resultCount === 1 ? "" : "s"} · ${machines} machine${machines === 1 ? "" : "s"}`}
+            sub={
+              <>
+                <strong>
+                  {metric.label} on {project}
+                </strong>
+                , each build's {metric.unit === "bytes" ? "memory" : "time"} divided by {refLabel}'s, measured in the same rounds on the same
+                machine. One mark is one result, its line the {confidences.join(", ") || "–"} interval; {directionText(metric.unit)}.
+                Machines are never averaged: their spread is the evidence.
+                {metric.called ? "" : " This metric is shown for context and gets no call."}
+              </>
+            }
+          >
+            <div className="panel">
+              {rows.length ? (
+                <RatioChart
+                  comparisons={shown}
+                  rows={rows}
+                  rowOf={rowKey}
+                  builds={builds}
+                  results={results}
+                  slots={slots}
+                  metric={metric}
+                  referenceLabel={refLabel}
+                  sameWithin={sameWithin}
+                  spot={spot}
+                  onSpot={setSpot}
+                  onSelect={onSelect}
+                />
+              ) : (
+                <p className="empty">Nothing left to show: every build is hidden. Switch one back on above.</p>
+              )}
+              <details className="explain">
+                <summary>How to read an interval and a call</summary>
+                <p>
+                  A mark sits at the median ratio over the result's rounds; its line is the distribution-free interval at the stated
+                  confidence. A ratio of 0.5× takes half the reference's {metric.unit === "bytes" ? "memory" : "time"}. The call compares that
+                  interval with the result's resolution: <em>faster</em> or <em>slower</em> when the interval clears it, <em>same ±r</em> when
+                  it sits inside, <em>unresolved</em> when it straddles the edge, <em>too few rounds</em> when the result has too few to say.
+                  {sameWithin === null && shown.some((c) => c.sameWithin !== null)
+                    ? " The results on screen use different resolutions, so no shared band is drawn."
+                    : ""}{" "}
+                  The method is in <a href="https://github.com/THEtheChad/parallax/blob/main/docs/measurement.md">docs/measurement.md</a>.
+                </p>
+              </details>
+            </div>
+          </Section>
+
+          <Section n="03" word="liner notes" id="table" sub="Every comparison on screen, with each side's own figure. Select a result to see where it came from.">
+            <div className="liner">
+              <div className="liner-label">
+                <span>
+                  Side A · {project} · vs {refLabel}
+                </span>
+                <span className="tools">
+                  <button type="button" className="btn small" onClick={() => {
+                    const recs = exportRecords();
+                    const head = Object.keys(recs[0] ?? {});
+                    download(`parallax-${project}-${metric.key}.csv`, "text/csv", [head.join(","), ...recs.map((r) => head.map((h) => csvCell(r[h])).join(","))].join("\n") + "\n");
+                  }}>
+                    ↓ CSV
+                  </button>
+                  <button type="button" className="btn small" onClick={() => download(`parallax-${project}-${metric.key}.json`, "application/json", JSON.stringify(exportRecords(), null, 2) + "\n")}>
+                    ↓ JSON
+                  </button>
+                </span>
+              </div>
+              <ComparisonTable comparisons={shown} builds={builds} results={results} metric={metric} slots={slots} spot={spot} onSpot={setSpot} />
+            </div>
+          </Section>
         </>
       ) : (
         <p className="empty">No metric has results for this selection.</p>

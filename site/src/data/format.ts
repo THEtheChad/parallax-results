@@ -44,3 +44,15 @@ export function implementationSlots(builds: Build[]): Map<string, number> {
 
 export const escapeHtml = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+// The ratio in words a visitor uses: "3.1× as fast" or "1.2× slower" for time, "uses 0.32× the
+// memory" for bytes. A ratio of exactly 1 is "the same".
+export function speedText(r: number, unit: MetricInfo["unit"]): string {
+  if (unit === "bytes") return r === 1 ? "the same memory" : `${fmtRatio(r)} the memory`;
+  if (r < 1) return `${(1 / r).toFixed(1)}× as fast`;
+  if (r > 1) return `${r.toFixed(1)}× slower`;
+  return "the same";
+}
+
+// Which way is better, for an axis or a subtitle.
+export const directionText = (unit: MetricInfo["unit"]): string => (unit === "bytes" ? "lower uses less memory" : "lower is faster");
