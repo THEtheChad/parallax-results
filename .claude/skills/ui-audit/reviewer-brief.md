@@ -15,7 +15,9 @@ findings.
 The run directory is this file's directory. Each step of each scenario is one
 **cell**, named `<scenario>.<step>@<viewport>`. Cells ending `~stub` render
 recorded fixture data: they prove what the page draws, not what the real data
-holds. The files are described in `CAMERA.md`, a copy of the camera contract.
+holds, and their numbers are synthetic fixture data, never measurements. The
+files are described in `CAMERA.md`, a copy of the camera contract; its "Known
+blind spots" (motion, hover where no step captures it) are not findings.
 
 **The valid cells** (the only evidence you may cite):
 
@@ -23,7 +25,10 @@ holds. The files are described in `CAMERA.md`, a copy of the camera contract.
 
 **Viewports:** {{from AUDIT.md "Supported viewports", with the owner's decision, and the colour schemes if captured}}.
 {{Every cell with an `unasserted` entry, and what the camera couldn't check
-there, e.g. "active nav item not on screen below 600px: checked against the URL".}}
+there, e.g. "active nav item not on screen below 600px: checked against the URL".
+An `unasserted` entry is a check the camera owed the cell and couldn't make
+from the pixels; the orchestrator has already filed each as a finding. List
+none of the contract's known blind spots here: they are in `CAMERA.md`.}}
 
 **Data:** {{what the data held, in a sentence per fixture: extremes, empties}}.
 

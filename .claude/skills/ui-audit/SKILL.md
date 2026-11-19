@@ -1,8 +1,8 @@
 ---
 name: ui-audit
-description: Run this repo's UI audit end to end: capture, three blind reviewers, owner triage, fix, verify. It spends a production build, three high-effort reviewers and up to an hour of the owner's time.
+description: Run this repo's UI audit end to end: capture, three blind reviewers, owner triage, fix, verify. It spends a production build and capture per fix batch plus verification captures, a preflight reviewer run and three high-effort review runs, a correction run per invalid answer and a re-check per judgement fix, and up to an hour of the owner's time.
 disable-model-invocation: true
-version: 3.0.0
+version: 3.1.0
 ---
 
 # UI audit
@@ -25,12 +25,14 @@ Three things to know before you start:
 - `/ui-audit capture <surfaces>` stops after step 3.
 - `/ui-audit resume <audit>` continues an audit. Find where it stopped with the table at the end of this file.
 
-**Cost.** Before step 1, tell the owner what the run will spend:
-- a production build of the site, rebuilt once per fix batch, and whatever else AUDIT.md's "Running it" needs;
-- three high-effort reviewer runs, plus a re-check per judgement fix;
-- up to an hour of their triage.
+`<surfaces>` names rows of AUDIT.md's Surfaces table, e.g. `/ui-audit Compare and Result`. Each row gives the scenario-id substring that selects it, which is what capture's `--only` takes; several surfaces are one comma-separated `--only` (`/ui-audit Compare and Result` is `--only compare,result-,journey`), and the whole site is no `--only` at all.
 
-"Budget exhausted" is a legitimate outcome.
+**Cost.** Before step 1, tell the owner what the run will spend:
+- **captures:** a production build and capture for r1, another per harness-fix re-capture, one per fix batch, and the verification captures;
+- **reviewer runs:** one preflight run (the robustness lens), three high-effort review runs, a `fix-<name>` round for each answer that fails validation, and a `verify` re-check for each judgement fix;
+- **the owner's time:** scope decisions still pending in AUDIT.md, then up to an hour of triage.
+
+AUDIT.md declares the budgets, reviewer runs included. "Budget exhausted" is a legitimate outcome.
 
 **Where things live:**
 - **The audit:** `docs/ui/audits/<date>-<scope>/`, committed as it grows. It holds `NOTES.md`, the brief, the reviewers' raw answers, the triage and the verification.
@@ -72,16 +74,16 @@ New scenarios pass AUDIT.md's gates like any other code.
 
 ## 3. Capture
 
-1. Follow AUDIT.md's "Running it" section:
-   - **a production build**, because dev servers inject overlays and devtools;
-   - fresh data: a fresh stack and seed where the app has them, otherwise the fixtures AUDIT.md names;
-   - `static.ts`, if this repo has one.
-2. Run `capture.ts` with `AUDIT_BUILD` set to what's serving the app.
-3. Log the capture as revision r1 in `NOTES.md`.
-4. Read the run's `manifest.json`. Check each cell that isn't `valid`, and each `unasserted` entry:
+1. Follow AUDIT.md's "Running it" section. In this repo, `pnpm ui-audit:capture` (add `--only <substring>` per surface, see "Before you start") does it all:
+   - it makes **a production build** (dev servers inject overlays and devtools), writes the fixture data sets, serves the site itself and stops the server when done;
+   - `AUDIT_BUILD` only overrides the build line recorded in the manifest; leave it unset unless something else serves what was captured;
+   - it refuses a dirty tree unless given `--allow-dirty`. An audit's captures come from committed trees: commit first, and keep `--allow-dirty` for a look while a fix is in progress, never for a logged revision.
+2. Log the capture as revision r1 in `NOTES.md`, with its run id and commit.
+3. Read the run's `manifest.json`. Check each cell that isn't `valid`, and each `unasserted` entry:
    - **A harness defect:** fix the scenario and re-capture as a new revision.
    - **A product defect:** record it in `NOTES.md` as a finding of your own.
-   - **An `unasserted` check** (the camera couldn't see something it should have): it is always a product finding.
+   - **An `unasserted` entry** is a check the camera owed this cell (one of the assertions in step 2: the route, the `h1`, the shell or identity, the fixture text) and could not make from the pixels, e.g. the active nav item is not on screen at this viewport. It is always a product finding: the user can't see it either.
+   - **The camera contract's known blind spots** (default motion, hover where it isn't captured, a still's single moment) are declared once, in [camera-contract.md](./camera-contract.md). They are never written to `unasserted` and never filed as findings.
 
 **Done when** `capture.ts` exits 0, or every cell that isn't valid has a reason in `NOTES.md`.
 
@@ -157,6 +159,8 @@ Follow process.md's Fixing rules: fix at the root, make one commit per root caus
 
 **Done when** every fixed root cause is either resolved, with its verdict in the report's Verification table, or has a new owner decision. Commit cropped before/after evidence and a regression test for each S1 and S2 fix.
 
+**Synthetic evidence.** Caption every committed crop or quote of a `~stub` cell "synthetic fixture data, not measurements". A stub cell shows how the page draws a state, never how a real implementation performs: it is never evidence of that in the report, and its numbers are never quoted as results.
+
 ## 9. Record
 
 1. Make sure the audit directory holds everything it should:
@@ -169,7 +173,7 @@ Follow process.md's Fixing rules: fix at the root, make one commit per root caus
    - `triage.json`;
    - `findings.md`;
    - `static-report.txt`, if the repo has `static.ts`;
-   - the cropped evidence.
+   - the cropped evidence, every `~stub` crop captioned "synthetic fixture data, not measurements".
 
    Screenshots stay out, apart from the cropped evidence.
 2. Write the outcome into the report:
@@ -184,7 +188,7 @@ Follow process.md's Fixing rules: fix at the root, make one commit per root caus
 
 1. Update AUDIT.md with the layout conventions this run settled and any new component names.
 2. Add the run's process notes to the report.
-3. If you changed this skill, bump `version` above (major for a change to the method or to what `consolidate.ts` accepts, minor for a new check or step, patch for wording), and keep `consolidate.ts` and its test green under the repo's gates.
+3. If you changed this skill, bump `version` above (major for a change to the method or to what `consolidate.ts` accepts, minor for a new check, step or rule, patch for wording), and keep `consolidate.ts` and its test green under the repo's gates. A check that newly catches what was always invalid (a cited path it used to miss) is minor, not major.
 
 **Done when** AUDIT.md carries what the run settled, and any change to the skill has its version bump.
 

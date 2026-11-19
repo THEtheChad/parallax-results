@@ -7,6 +7,10 @@ Process: the `ui-audit` skill, v{{skill version}}. Configuration:
 **Outcome: {{passed | passed with accepted deviations | blocked | budget exhausted}}.**
 {{One sentence on why.}}
 
+Cells ending `~stub` render synthetic fixture data. Every crop or quote of one
+here is captioned "synthetic fixture data, not measurements", and none is
+evidence of how a real implementation performs.
+
 ## Runs
 
 | Revision | Run | What | Cells |
@@ -33,7 +37,8 @@ Re-render after triage; never edit the table by hand.}}
 | F1 | {{probe / axe / lens re-check by <reviewer>}} | {{cell}} | {{cell}} | resolved / not resolved / regressed |
 
 {{Cropped before/after evidence for every S1 and S2 fix, committed in
-`{{date}}-{{scope}}/`.}}
+`{{date}}-{{scope}}/`. Caption each crop of a `~stub` cell "synthetic fixture
+data, not measurements".}}
 
 New regression tests, each shown to fail without its fix:
 

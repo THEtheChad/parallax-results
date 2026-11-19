@@ -111,6 +111,40 @@ describe("validate", () => {
     ]);
   });
 
+  test("checks a cited repo path wherever it ends: a backtick, a bracket, a full stop", () => {
+    const run = mkdtempSync(join(tmpdir(), "ui-audit-run-"));
+    const root = mkdtempSync(join(tmpdir(), "ui-audit-repo-"));
+    mkdirSync(join(root, "docs/ui"), { recursive: true });
+    mkdirSync(join(root, "site/src/routes"), { recursive: true });
+    for (const f of ["docs/ui/AUDIT.md", "site/src/x.tsx", "site/src/x.test.tsx", "site/src/routes/[id].tsx"]) writeFileSync(join(root, f), "");
+    const cites = (evidence: string[]) =>
+      validate(new Map([["astra", [finding({ evidence })]]]), cells, names, { run, repo: root }).problems;
+
+    // Each existing path, however it is wrapped, passes.
+    for (const e of [
+      "`docs/ui/AUDIT.md`",
+      "`site/src/x.tsx`",
+      "[site/src/x.tsx]",
+      "[site/src/x.tsx](site/src/x.tsx)",
+      "see site/src/x.tsx.",
+      "see site/src/x.tsx. Then the header",
+      "site/src/x.test.tsx",
+      "`site/src/routes/[id].tsx:4`",
+      "[site/src/routes/[id].tsx]",
+    ])
+      assert.deepEqual(cites([e]), [], e);
+
+    // Each missing one, wrapped the same ways, is caught: none slips past unchecked.
+    for (const [e, path] of [
+      ["`docs/ui/NOPE.md`", "docs/ui/NOPE.md"],
+      ["`site/src/nope.tsx`", "site/src/nope.tsx"],
+      ["[site/src/nope.tsx]", "site/src/nope.tsx"],
+      ["see site/src/nope.tsx.", "site/src/nope.tsx"],
+      ["site/src/nope.test.tsx: the table", "site/src/nope.test.tsx"],
+    ] as const)
+      matchesAll(cites([e]), [new RegExp(`cites ${path.replace(/[.[\]]/g, "\\$&")}, which doesn't exist`)]);
+  });
+
   test("refuses a finding without evidence, or citing a cell the camera never made", () => {
     const { problems } = validate(
       new Map([["astra", [finding({ evidence: [] }), finding({ scenario_cells: ["nowhere.page@desktop"] })]]]),

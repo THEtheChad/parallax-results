@@ -4,9 +4,9 @@ Each lens runs on a different model family. Different families disagree in usefu
 
 | Lens | Name | Family, in order of preference |
 |---|---|---|
-| Robustness & keyboard | astra | OpenAI Codex (`gpt-6-astra`), then any other Codex model |
-| Craft & consistency | fable | Claude Fable (newest available), then Claude Opus |
-| Cold read | wonderful | Muse (`muse-wonder-full-1.0`) |
+| Robustness & keyboard | astra | OpenAI Codex: `gpt-6-astra`, then any other Codex model |
+| Craft & consistency | fable | Claude: Fable (newest available), then Opus |
+| Cold read | wonderful | Muse: `muse-wonder-full-1.0` |
 
 ## Resolve targets live
 
@@ -14,15 +14,7 @@ Each lens runs on a different model family. Different families disagree in usefu
 2. For each lens, pick the first family member on the list above whose provider instance has `canRunChildTask: true`. If the list leaves a model out, search for it by name.
 3. Record in `reviewers.json` the provider instance and model each reviewer actually ran on.
 
-On the owner's machine the targets have been:
-
-| Name | `providerInstanceId` | Model |
-|---|---|---|
-| astra | `codex` | `gpt-6-astra` |
-| fable | `claudeAgent` | `claude-fable-5-1` |
-| wonderful | `muse_muse_code_personal` | `muse-wonder-full-1.0` |
-
-These are a starting point, not configuration. Instances and model ids change: always resolve live, and record what ran.
+Provider instance ids differ per machine, so none is written here, and model ids change: always resolve the instance live with `orchestrator_capabilities`, and record what ran.
 
 Set high effort:
 - Claude: `{effort: "high"}`

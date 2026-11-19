@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
-import { KIND_LABEL, METRICS, type Index, type Kind, type ResultSummary } from "../../site/src/data/model.ts";
-import { buildLabel, RESULTS, stubIndex, type FixtureResult, type StubSet } from "./fixtures.ts";
+import { sortFn_alphanumeric } from "@tanstack/react-table";
+import { fmtInterval, fmtRatio, platformName } from "../../site/src/data/format.ts";
+import { KIND_LABEL, METRICS, type Comparison, type Index, type Kind, type ResultSummary } from "../../site/src/data/model.ts";
+import { buildLabel, DEFAULT_PROJECT, RESULTS, stubIndex, type FixtureResult, type StubSet } from "./fixtures.ts";
 
 /*
  * The audit's scenarios (docs/ui/AUDIT.md): sparse by construction. A data state appears only on
@@ -31,9 +33,19 @@ export const BRAND = "Parallax results";
 
 export type NavItem = "Compare" | "Results" | "About";
 
+/** The compare view CompareView draws for an index with no search but a project. */
+export interface CompareDefaults {
+  readonly kind: Kind;
+  readonly metric: string;
+  readonly reference: string;
+  /** The comparisons it draws: one chart dot and one table row each. */
+  readonly shown: readonly Comparison[];
+}
+
 /** What the real data holds, read from the built index, as the scenarios use it. */
 export interface Fixtures {
   readonly real: {
+    readonly index: Index;
     readonly results: number;
     /** The first row of the results list. */
     readonly newest: ResultSummary;
@@ -42,15 +54,35 @@ export interface Fixtures {
   };
 }
 
+const unique = <T,>(xs: readonly T[]): T[] => [...new Set(xs)];
+const mostCommon = (xs: readonly string[]): string | undefined => {
+  const n = new Map<string, number>();
+  for (const x of xs) n.set(x, (n.get(x) ?? 0) + 1);
+  return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
+};
+
+/**
+ * What CompareView shows for `project` with every other filter at its default (first kind, first
+ * metric with data, both thread modes, every OS, the most common reference, nothing hidden).
+ */
+export function compareDefaults(index: Index, project?: string): CompareDefaults {
+  const kind = unique(index.comparisons.map((c) => c.kind)).sort()[0] ?? "cli-bench";
+  const inKind = index.comparisons.filter((c) => c.kind === kind);
+  const p = project ?? unique(inKind.map((c) => c.project)).sort()[0];
+  const inProject = inKind.filter((c) => c.project === p);
+  const metric = METRICS[kind].find((m) => inProject.some((c) => c.metric === m.key));
+  const scoped = inProject.filter((c) => c.metric === metric?.key);
+  const reference = mostCommon(scoped.map((c) => c.reference)) ?? "";
+  return { kind, metric: metric?.label ?? "", reference, shown: scoped.filter((c) => c.reference === reference) };
+}
+
 /** The real index, read the way CompareView picks its defaults (first kind, first project, first metric). */
 export function realFixtures(index: Index): Fixtures {
   const newest = index.results[0];
   if (!newest) throw new Error("the real index has no results: the real scenarios need at least one");
-  const kind = [...new Set(index.comparisons.map((c) => c.kind))].sort()[0] ?? "cli-bench";
-  const projects = [...new Set(index.comparisons.filter((c) => c.kind === kind).map((c) => c.project))].sort();
-  const inProject = index.comparisons.filter((c) => c.kind === kind && c.project === projects[0]);
-  const metric = METRICS[kind].find((m) => inProject.some((c) => c.metric === m.key))?.label ?? "";
-  return { real: { results: index.results.length, newest, compare: { kind, metric, projects } } };
+  const { kind, metric } = compareDefaults(index);
+  const projects = unique(index.comparisons.filter((c) => c.kind === kind).map((c) => c.project)).sort();
+  return { real: { index, results: index.results.length, newest, compare: { kind, metric, projects } } };
 }
 
 export interface Expectation {
@@ -67,8 +99,16 @@ export interface Expectation {
   readonly title: string | RegExp | null;
   /** Text that must be visible: proves the data set loaded. */
   readonly text?: readonly (string | RegExp)[];
-  /** The ratio chart's dot count, read from ECharts: proves it drew the whole selection. */
+  /** Text that must not be visible: proves a state held (e.g. the data has not arrived yet). */
+  readonly absent?: readonly (string | RegExp)[];
+  /** The ratio chart's dot count, read from ECharts: proves it drew the whole selection. 0: no chart. */
   readonly chartDots?: number;
+  /** Text the ratio chart's tooltip must show, and so must be open. */
+  readonly tooltip?: readonly (string | RegExp)[];
+  /** The colour scheme the page renders in. Defaults to the viewport's (the OS setting). */
+  readonly scheme?: "light" | "dark";
+  /** The Compare page's Table, sorted by one column: its header's aria-sort and the column's cells, in order. */
+  readonly sorted?: { readonly column: string; readonly direction: "ascending" | "descending"; readonly values: readonly string[] };
 }
 
 export interface Step {
@@ -87,24 +127,43 @@ export interface Scenario {
   readonly viewports: readonly Viewport[];
   /** A still has one step; a journey several, each asserted and captured. */
   readonly steps: readonly Step[];
-  /** Record each Tab stop (role, name, focus ring) after the last step, at these viewports (desktop if unsaid). */
+  /**
+   * Record each Tab stop (role, name, focus ring) after the last step, at these viewports (desktop
+   * if unsaid). The walk reloads the page and asserts the last step's expectation again first.
+   */
   readonly keyboard?: { readonly presses: number; readonly viewports?: readonly Viewport[] };
   /** Console errors this scenario expects; any other makes its cell fail. */
   readonly allowConsole?: readonly RegExp[];
-  /** The OS colour scheme. The site follows it unless its theme menu says otherwise. */
-  readonly colorScheme?: "light" | "dark";
+  /**
+   * Requests (by URL) held unanswered until the scenario's cells are captured: the camera photographs
+   * the page while they are in flight (the loading state) instead of waiting for them.
+   */
+  readonly hold?: RegExp;
 }
 
 /**
- * `zoom200` is the desktop window at 200% zoom: 640×400 CSS px drawn at device scale 2, so the
- * 1280×800 screenshot shows what a zoomed user sees. It is an emulation, not the browser's zoom.
+ * The supported viewports. The OS colour scheme is part of the name (`desktop-dark`), so a cell's
+ * name says what it shows. `zoom200` is the desktop window at 200% zoom: 640×400 CSS px drawn at
+ * device scale 2, so the 1280×800 screenshot shows what a zoomed user sees. It is an emulation, not
+ * the browser's zoom.
  */
-export type Viewport = "phone" | "desktop" | "zoom200";
+export type Viewport = "phone" | "tablet" | "desktop" | "desktop-dark" | "zoom200";
 
-export const viewportSizes: Record<Viewport, { width: number; height: number; scale?: number; mobile?: boolean }> = {
-  phone: { width: 390, height: 844, mobile: true },
-  desktop: { width: 1280, height: 800 },
-  zoom200: { width: 640, height: 400, scale: 2 },
+export interface ViewportSize {
+  readonly width: number;
+  readonly height: number;
+  readonly scale?: number;
+  /** Mobile emulation, with touch. */
+  readonly mobile?: boolean;
+  readonly colorScheme: "light" | "dark";
+}
+
+export const viewportSizes: Record<Viewport, ViewportSize> = {
+  phone: { width: 390, height: 844, mobile: true, colorScheme: "light" },
+  tablet: { width: 768, height: 1024, mobile: true, colorScheme: "light" },
+  desktop: { width: 1280, height: 800, colorScheme: "light" },
+  "desktop-dark": { width: 1280, height: 800, colorScheme: "dark" },
+  zoom200: { width: 640, height: 400, scale: 2, colorScheme: "light" },
 };
 
 const still = (expect: Step["expect"]): readonly Step[] => [{ name: "page", expect }];
@@ -114,15 +173,28 @@ const resultTitle = (r: { kind: Kind; project: string; date: string }): string =
 const fixtureTitle = (r: FixtureResult): string => resultTitle({ kind: r.kind, project: r.project.name, date: r.finishedAt.slice(0, 10) });
 const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** A compare view's section title (CompareView): metric · project · against the reference. */
+function compareTitle(index: Index, project?: string): string {
+  const d = compareDefaults(index, project);
+  const p = project ?? d.shown[0]?.project ?? "";
+  return `${d.metric} · ${p} · against ${index.builds.find((b) => b.key === d.reference)?.label ?? "–"}`;
+}
+/** The real compare view's title and dot count, for one project (the first if unsaid). */
+const realCompare = (fx: Fixtures, project?: string): Pick<Expectation, "title" | "chartDots"> => ({
+  title: compareTitle(fx.real.index, project),
+  chartDots: compareDefaults(fx.real.index, project).shown.length,
+});
+
 /** The comparisons a compare view should draw, from a stub set's index. */
 const dots = (set: StubSet, keep: (c: Index["comparisons"][number]) => boolean): number => stubIndex(set).comparisons.filter(keep).length;
-const honoWall = (c: Index["comparisons"][number]): boolean => c.kind === "cli-bench" && c.project === "hono" && c.metric === "cli.wallMs";
+const appWall = (c: Index["comparisons"][number]): boolean => c.kind === "cli-bench" && c.project === DEFAULT_PROJECT && c.metric === "cli.wallMs";
+const stubTitle = (metric: string): string => `${metric} · ${DEFAULT_PROJECT} · against ${buildLabel("base")}`;
 
 const EMPTY = "No results have been published yet.";
 const COMPARE_LEDE = /Each dot is one published result/;
-const TSRS = buildLabel("tsrs");
-const TSC71 = buildLabel("tsc71");
-const NIGHTLY = buildLabel("tsrsNightly");
+const BETA = buildLabel("beta");
+const ALPHA_NEXT = buildLabel("alphaNext");
+const LONG_LABEL = buildLabel("betaLong");
 
 /** The page centre of one chart dot, by comparison id, from ECharts' own coordinates. */
 async function dotPosition(page: Page, comparison: string): Promise<{ x: number; y: number }> {
@@ -132,7 +204,7 @@ async function dotPosition(page: Page, comparison: string): Promise<{ x: number;
     if (!el || !chart) return null;
     const series = (chart.getOption() as { series: { data?: { id?: string; value: number[] }[] }[] }).series;
     for (const s of series)
-      for (const d of s.data ?? [])
+      for (const d of s?.data ?? [])
         if (d.id === id) {
           const [x, y] = chart.convertToPixel({ gridIndex: 0 }, [d.value[2]!, d.value[3]!]) as number[];
           const box = el.getBoundingClientRect();
@@ -144,6 +216,20 @@ async function dotPosition(page: Page, comparison: string): Promise<{ x: number;
   return at;
 }
 
+/** The dot the tooltip steps open: the first the real compare view draws. */
+const tooltipDot = (fx: Fixtures): Comparison => {
+  const c = compareDefaults(fx.real.index).shown[0];
+  if (!c) throw new Error("the real compare view draws no dot");
+  return c;
+};
+
+/** The Compare table's Build column, sorted as its header sorts it (TanStack's alphanumeric sort). */
+const byBuild = (fx: Fixtures, project?: string): string[] => {
+  const labels = compareDefaults(fx.real.index, project).shown.map((c) => fx.real.index.builds.find((b) => b.key === c.candidate)?.label ?? c.candidate);
+  const row = (v: string) => ({ getValue: () => v }) as unknown as Parameters<typeof sortFn_alphanumeric>[0];
+  return labels.sort((a, b) => sortFn_alphanumeric(row(a), row(b), "build"));
+};
+
 export const scenarios: readonly Scenario[] = [
   // ── Real data: every surface, as published ──────────────────────────────────────────────────────
   {
@@ -151,10 +237,10 @@ export const scenarios: readonly Scenario[] = [
     persona: "visitor",
     data: "real",
     route: () => "/",
-    viewports: ["desktop", "phone", "zoom200"],
+    viewports: ["desktop", "phone", "tablet", "zoom200"],
     steps: still((fx) => ({
       nav: "Compare",
-      title: new RegExp(`^${escape(fx.real.compare.metric)} · ${escape(fx.real.compare.projects[0] ?? "")} · against `),
+      ...realCompare(fx),
       text: [COMPARE_LEDE, "Table"],
     })),
     // Zoomed is where keyboard users who also magnify lose the focus ring off-screen.
@@ -174,7 +260,7 @@ export const scenarios: readonly Scenario[] = [
     keyboard: { presses: 40 },
   },
   {
-    id: "result",
+    id: "result-newest",
     persona: "visitor",
     data: "real",
     route: (fx) => `/result/${fx.real.newest.id}`,
@@ -190,6 +276,121 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone"],
     steps: still(() => ({ nav: "About", title: "What this is", text: ["Contributing results", "CONTRIBUTING.md"] })),
     keyboard: { presses: 30 },
+  },
+  // ── Real data: the states a visitor reaches without a fixture ───────────────────────────────────
+  {
+    // The chart's tooltip: hovered with a mouse; on a touch screen, a finger held on the dot (a full
+    // tap is a click, which opens the dot's result instead).
+    id: "compare-tooltip",
+    persona: "visitor",
+    data: "real",
+    route: () => "/",
+    viewports: ["desktop", "phone"],
+    steps: [
+      {
+        name: "tooltip",
+        act: async (page, fx) => {
+          const id = tooltipDot(fx).id;
+          await page.locator(".chart").evaluate((el) => el.scrollIntoView({ block: "center" }));
+          await page.waitForTimeout(100);
+          const at = await dotPosition(page, id);
+          if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
+            const cdp = await page.context().newCDPSession(page);
+            await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: at.x, y: at.y }] });
+          } else await page.mouse.move(at.x, at.y, { steps: 4 });
+        },
+        expect: (fx) => {
+          const c = tooltipDot(fx);
+          const r = fx.real.index.results.find((x) => x.id === c.result)!;
+          return {
+            route: "/",
+            nav: "Compare",
+            ...realCompare(fx),
+            tooltip: [fmtInterval(c.ratio), `${c.ratio.n} rounds`, `${platformName(r.machine.platform)} · ${r.machine.cpuModel}`],
+          };
+        },
+      },
+    ],
+  },
+  {
+    // The Table under the chart, sorted from the keyboard by its Build header.
+    id: "compare-sort",
+    persona: "visitor",
+    data: "real",
+    route: () => "/",
+    viewports: ["desktop"],
+    steps: [
+      {
+        name: "sort-by-build",
+        act: async (page) => {
+          const table = page.locator("section.card", { has: page.getByRole("heading", { name: "Table", exact: true }) });
+          await table.getByRole("button", { name: "Build", exact: true }).press("Enter");
+          await table.locator('th[aria-sort="ascending"]', { hasText: "Build" }).waitFor();
+        },
+        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompare(fx), sorted: { column: "Build", direction: "ascending", values: byBuild(fx) } }),
+      },
+    ],
+  },
+  {
+    // Every build chip pressed off: the chart says nothing is left, the filters stay.
+    id: "compare-all-hidden",
+    persona: "visitor",
+    data: "real",
+    route: () => "/",
+    viewports: ["desktop"],
+    steps: [
+      {
+        name: "hide-every-build",
+        act: async (page) => {
+          const chips = page.getByRole("group", { name: "Builds shown" }).getByRole("button");
+          const n = await chips.count();
+          if (n === 0) throw new Error("no build chips");
+          for (let i = 0; i < n; i++) {
+            await chips.nth(i).click();
+            await page.waitForFunction((k) => document.querySelectorAll('.chip[aria-pressed="false"]').length === k, i + 1);
+          }
+        },
+        expect: (fx) => ({
+          route: /^\/\?hide=[^&]+$/,
+          nav: "Compare",
+          title: realCompare(fx).title,
+          chartDots: 0,
+          text: ["Nothing left to show: every build is hidden."],
+        }),
+      },
+    ],
+  },
+  {
+    // A shared link whose project, metric, OS and hidden build no longer exist: each filter falls
+    // back to its first choice, so the link still shows the default view.
+    id: "compare-stale-link",
+    persona: "visitor",
+    data: "real",
+    route: () => "/?project=gone&metric=nope&os=plan9&hide=stale",
+    viewports: ["desktop"],
+    steps: still((fx) => ({ nav: "Compare", ...realCompare(fx), text: [COMPARE_LEDE] })),
+  },
+  {
+    // A mistyped link: what the router renders for a route it does not know.
+    id: "unknown-route",
+    persona: "visitor",
+    data: "real",
+    route: () => "/bogus/typo",
+    viewports: ["desktop"],
+    steps: still(() => ({ nav: null, title: null, text: ["Not Found"] })),
+  },
+  {
+    // The page while data/index.json is still on its way, photographed 1.5 s in. Asserted: the
+    // shell, and that no data has arrived. Layout's "Loading results…" fallback is not asserted:
+    // at the time of writing it never shows (the router's own boundary catches the suspension), and
+    // the camera photographs what a visitor sees rather than what the code intends.
+    id: "loading",
+    persona: "visitor",
+    data: "real",
+    route: () => "/",
+    viewports: ["desktop"],
+    hold: /\/data\/index\.json$/,
+    steps: still(() => ({ nav: "Compare", title: null, absent: [COMPARE_LEDE, "Table", "No results have been published yet."] })),
   },
   // ── Journey: list → a result → Back → compare → a filter, the hash route held at each step ──────
   {
@@ -222,7 +423,7 @@ export const scenarios: readonly Scenario[] = [
           await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Compare" }).click();
           await page.waitForURL((u) => u.hash === "#/");
         },
-        expect: (fx) => ({ route: "/", nav: "Compare", title: new RegExp(` · ${escape(fx.real.compare.projects[0] ?? "")} · `), text: [COMPARE_LEDE] }),
+        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompare(fx), text: [COMPARE_LEDE] }),
       },
       {
         // Needs a second project; the real results have had two since the first publish.
@@ -236,8 +437,44 @@ export const scenarios: readonly Scenario[] = [
         expect: (fx) => ({
           route: `/?project=${encodeURIComponent(fx.real.compare.projects[1] ?? "")}`,
           nav: "Compare",
-          title: new RegExp(` · ${escape(fx.real.compare.projects[1] ?? "")} · `),
+          ...realCompare(fx, fx.real.compare.projects[1]),
         }),
+      },
+    ],
+  },
+  // ── Journey: the theme menu's choice holds across a navigation and a reload ──────────────────────
+  {
+    id: "journey-theme",
+    persona: "visitor",
+    data: "real",
+    route: () => "/",
+    // The OS is light here, so dark can only come from the menu.
+    viewports: ["desktop"],
+    steps: [
+      {
+        name: "choose-dark",
+        act: async (page) => {
+          await page.getByRole("combobox", { name: "Theme" }).selectOption("dark");
+          await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+        },
+        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompare(fx), scheme: "dark" }),
+      },
+      {
+        name: "open-result",
+        act: async (page, fx) => {
+          await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Results" }).click();
+          await page.waitForURL((u) => u.hash === "#/results");
+          await page.getByRole("link", { name: fx.real.newest.id.slice(0, 8), exact: true }).click();
+          await page.waitForURL((u) => u.hash === `#/result/${fx.real.newest.id}`);
+        },
+        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, title: resultTitle(fx.real.newest), text: [fx.real.newest.machine.cpuModel], scheme: "dark" }),
+      },
+      {
+        name: "reload",
+        act: async (page) => {
+          await page.reload();
+        },
+        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, title: resultTitle(fx.real.newest), text: [fx.real.newest.machine.cpuModel], scheme: "dark" }),
       },
     ],
   },
@@ -277,9 +514,9 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone"],
     steps: still(() => ({
       nav: "Compare",
-      title: `wall time · hono · against ${buildLabel("tsc702")}`,
-      text: ["1 result from 1 machine", TSRS],
-      chartDots: dots("one", honoWall),
+      title: stubTitle("wall time"),
+      text: ["1 result from 1 machine", BETA],
+      chartDots: dots("one", appWall),
     })),
   },
   {
@@ -288,7 +525,7 @@ export const scenarios: readonly Scenario[] = [
     data: "one",
     route: () => "/results",
     viewports: ["desktop"],
-    steps: still(() => ({ nav: "Results", title: "All results", text: ["1 published result,", RESULTS.honoLinux.id.slice(0, 8)] })),
+    steps: still(() => ({ nav: "Results", title: "All results", text: ["1 published result,", RESULTS.appLinux.id.slice(0, 8)] })),
   },
   // ── Many results: projects, both benchmarks, four machines, every call ──────────────────────────
   {
@@ -296,22 +533,13 @@ export const scenarios: readonly Scenario[] = [
     persona: "visitor",
     data: "many",
     route: () => "/",
-    viewports: ["desktop", "phone", "zoom200"],
+    viewports: ["desktop", "desktop-dark", "phone", "zoom200"],
     steps: still(() => ({
       nav: "Compare",
-      title: `wall time · hono · against ${buildLabel("tsc702")}`,
-      text: ["3 results from 3 machines", "unresolved", "slower", "same ±5%", buildLabel("forkLocal")],
-      chartDots: dots("many", honoWall),
+      title: stubTitle("wall time"),
+      text: ["3 results from 3 machines", "unresolved", "slower", "same ±5%", buildLabel("gammaLocal")],
+      chartDots: dots("many", appWall),
     })),
-  },
-  {
-    id: "compare-many-dark~stub",
-    persona: "visitor",
-    data: "many",
-    route: () => "/",
-    viewports: ["desktop"],
-    colorScheme: "dark",
-    steps: still(() => ({ nav: "Compare", title: `wall time · hono · against ${buildLabel("tsc702")}`, chartDots: dots("many", honoWall) })),
   },
   {
     id: "compare-many-lsp~stub",
@@ -321,13 +549,13 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone"],
     steps: still(() => ({
       nav: "Compare",
-      title: `open: first diagnostics · hono · against ${buildLabel("tsc702")}`,
-      text: ["1 result from 1 machine", TSRS],
-      chartDots: dots("many", (c) => c.kind === "lsp-bench" && c.project === "hono" && c.metric === "open.firstDiagnosticsMs"),
+      title: stubTitle("open: first diagnostics"),
+      text: ["1 result from 1 machine", BETA],
+      chartDots: dots("many", (c) => c.kind === "lsp-bench" && c.project === DEFAULT_PROJECT && c.metric === "open.firstDiagnosticsMs"),
     })),
   },
   {
-    // A metric with no call, one thread mode, one OS: the narrowest the filters go on hono.
+    // A metric with no call, one thread mode, one OS: the narrowest the filters go on fixture-app.
     id: "compare-many-filtered~stub",
     persona: "visitor",
     data: "many",
@@ -335,9 +563,9 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop"],
     steps: still(() => ({
       nav: "Compare",
-      title: `CPU time · hono · against ${buildLabel("tsc702")}`,
+      title: stubTitle("CPU time"),
       text: ["this metric gets no call", "1 result from 1 machine"],
-      chartDots: dots("many", (c) => c.project === "hono" && c.metric === "cli.cpuMs" && c.mode === "default" && c.result === RESULTS.honoMac.id),
+      chartDots: dots("many", (c) => c.project === DEFAULT_PROJECT && c.metric === "cli.cpuMs" && c.mode === "default" && c.result === RESULTS.appMac.id),
     })),
   },
   {
@@ -349,12 +577,13 @@ export const scenarios: readonly Scenario[] = [
     steps: still(() => ({
       nav: "Results",
       title: "All results",
-      text: ["7 published results", "Language server", RESULTS.edge.project.name, "(not in the suite)", NIGHTLY],
+      text: ["7 published results", "Language server", RESULTS.edge.project.name, "(not in the suite)", LONG_LABEL],
     })),
   },
   {
     // Every edge on one page: long project, build and CPU labels, a failed candidate, too few
-    // rounds, notes, rejected rounds, Low Power Mode, lowered priority, a dirty project.
+    // rounds, notes, rejected rounds, Low Power Mode, lowered priority, a dirty project, and a ratio
+    // small enough to need significant figures.
     id: "result-edge~stub",
     persona: "visitor",
     data: "many",
@@ -363,24 +592,32 @@ export const scenarios: readonly Scenario[] = [
     steps: still(() => ({
       nav: null,
       title: fixtureTitle(RESULTS.edge),
-      text: ["too few rounds", "Low Power Mode on", "priority lowered (10)", "had local changes", "Notes from the bench", "Rejected rounds", "0.023×"],
+      text: [
+        "too few rounds",
+        "Low Power Mode on",
+        "priority lowered (10)",
+        "had local changes",
+        "Notes from the bench",
+        "Rejected rounds",
+        fmtRatio(Math.min(...RESULTS.edge.summary.candidates.flatMap((c) => (c.wallRatio ? [c.wallRatio.estimate] : [])))),
+      ],
     })),
   },
   {
     id: "result-noisy~stub",
     persona: "visitor",
     data: "many",
-    route: () => `/result/${RESULTS.honoWindows.id}`,
+    route: () => `/result/${RESULTS.appWindows.id}`,
     viewports: ["desktop"],
-    steps: still(() => ({ nav: null, title: fixtureTitle(RESULTS.honoWindows), text: ["unresolved", buildLabel("forkLocal"), "not every call settled", "plan: Balanced"] })),
+    steps: still(() => ({ nav: null, title: fixtureTitle(RESULTS.appWindows), text: ["unresolved", buildLabel("gammaLocal"), "not every call settled", "plan: Balanced"] })),
   },
   {
     id: "result-lsp~stub",
     persona: "visitor",
     data: "many",
-    route: () => `/result/${RESULTS.honoLsp.id}`,
+    route: () => `/result/${RESULTS.appLsp.id}`,
     viewports: ["desktop"],
-    steps: still(() => ({ nav: null, title: fixtureTitle(RESULTS.honoLsp), text: ["session: memory", "typing: completion p95", "MB"] })),
+    steps: still(() => ({ nav: null, title: fixtureTitle(RESULTS.appLsp), text: ["session: memory", "typing: completion p95", "MB"] })),
   },
   // ── Journey: a chart dot opens its result; Back keeps the view; a chip hides a build ────────────
   {
@@ -390,16 +627,16 @@ export const scenarios: readonly Scenario[] = [
     route: () => "/",
     viewports: ["desktop"],
     steps: [
-      { name: "compare", expect: () => ({ nav: "Compare", title: /^wall time · hono · /, chartDots: dots("many", honoWall) }) },
+      { name: "compare", expect: () => ({ nav: "Compare", title: new RegExp(`^wall time · ${escape(DEFAULT_PROJECT)} · `), chartDots: dots("many", appWall) }) },
       {
-        // The Windows dot of tsrs: drawn last in its row, so no neighbour's hit target covers it.
+        // The Windows dot of beta: drawn last in its row, so no neighbour's hit target covers it.
         name: "click-dot",
         act: async (page) => {
-          const at = await dotPosition(page, `${RESULTS.honoWindows.id}:tsrs:cli.wallMs`);
+          const at = await dotPosition(page, `${RESULTS.appWindows.id}:beta:cli.wallMs`);
           await page.mouse.click(at.x, at.y);
           await page.waitForURL((u) => u.hash.startsWith("#/result/"));
         },
-        expect: () => ({ route: `/result/${RESULTS.honoWindows.id}`, nav: null, title: fixtureTitle(RESULTS.honoWindows) }),
+        expect: () => ({ route: `/result/${RESULTS.appWindows.id}`, nav: null, title: fixtureTitle(RESULTS.appWindows) }),
       },
       {
         name: "browser-back",
@@ -407,19 +644,19 @@ export const scenarios: readonly Scenario[] = [
           await page.goBack();
           await page.waitForURL((u) => u.hash === "#/");
         },
-        expect: () => ({ route: "/", nav: "Compare", title: /^wall time · hono · /, chartDots: dots("many", honoWall) }),
+        expect: () => ({ route: "/", nav: "Compare", title: new RegExp(`^wall time · ${escape(DEFAULT_PROJECT)} · `), chartDots: dots("many", appWall) }),
       },
       {
         name: "hide-build",
         act: async (page) => {
-          await page.getByRole("group", { name: "Builds shown" }).getByRole("button", { name: TSC71 }).click();
+          await page.getByRole("group", { name: "Builds shown" }).getByRole("button", { name: ALPHA_NEXT }).click();
           await page.waitForURL((u) => u.hash.includes("hide="));
         },
         expect: () => ({
           route: /^\/\?hide=/,
           nav: "Compare",
-          title: /^wall time · hono · /,
-          chartDots: dots("many", (c) => honoWall(c) && c.candidate !== stubIndex("many").builds.find((b) => b.label === TSC71)?.key),
+          title: new RegExp(`^wall time · ${escape(DEFAULT_PROJECT)} · `),
+          chartDots: dots("many", (c) => appWall(c) && c.candidate !== stubIndex("many").builds.find((b) => b.label === ALPHA_NEXT)?.key),
         }),
       },
     ],

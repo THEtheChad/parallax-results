@@ -54,3 +54,15 @@ production build; three reviewers on different model families, blind to each oth
 photographs; the owner triages; every fix is checked against new photographs.
 [docs/ui/AUDIT.md](docs/ui/AUDIT.md) is the audit's configuration (surfaces, viewports, the visual
 spec, the component vocabulary) and links the reports.
+
+The first run starts with owner decisions pending in AUDIT.md (the supported viewports and the
+cold-read questions): the skill asks for them before it captures anything. To run the camera alone,
+without reviewers:
+
+```sh
+pnpm ui-audit:capture                  # build, serve and photograph every scenario → scripts/ui-audit/runs/<run-id>/
+pnpm ui-audit:capture --only compare   # only scenarios whose id contains "compare"
+```
+
+It exits 1 unless every cell is valid, and refuses a tree with uncommitted changes unless given
+`--allow-dirty`. AUDIT.md's "Running it" has the details.

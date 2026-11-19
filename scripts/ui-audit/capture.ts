@@ -6,8 +6,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { type Browser, type BrowserContext, chromium, type Page } from "@playwright/test";
 import type { Index } from "../../site/src/data/model.ts";
 import { describeSets, STUB_SETS, writeFixtureSets } from "./fixtures.ts";
-import { type Expectation, type Fixtures, type PersonaKey, realFixtures, type Scenario, scenarios, viewportSizes } from "./scenarios.ts";
-import { serve } from "./serve.ts";
+import { type Expectation, type Fixtures, type PersonaKey, realFixtures, type Scenario, scenarios, type Viewport, viewportSizes } from "./scenarios.ts";
+import { type Served, serve } from "./serve.ts";
 
 /*
  * The audit's camera (docs/ui/AUDIT.md). It has no opinions: it builds the site for production,
@@ -17,7 +17,14 @@ import { serve } from "./serve.ts";
  * skill's camera contract (.claude/skills/ui-audit/camera-contract.md) promises, and exits 1
  * unless every expected cell is valid.
  *
- *   node scripts/ui-audit/capture.ts [--only <id-substring>] [--no-build]
+ *   node scripts/ui-audit/capture.ts [--only <id-substring>[,<id-substring>…]] [--no-build] [--allow-dirty]
+ *
+ * --only keeps the scenarios whose id contains any of the substrings (docs/ui/AUDIT.md maps each
+ * surface to one); each must match at least one scenario.
+ *
+ * Exit codes: 0 every expected cell valid; 1 any cell failed or blocked (a setup failure blocks
+ * them all, and the manifest still says so); 2 refused before capturing (a usage mistake, or a
+ * dirty tree without --allow-dirty).
  *
  * Hermetic: the one third-party request the site makes (Apache ECharts from cdnjs) is answered from
  * node_modules after checking that file against the page's integrity hash, and every other request
@@ -28,9 +35,48 @@ const REPO = resolve(import.meta.dirname, "../..");
 const ROOT = import.meta.dirname;
 const DIST = join(REPO, "dist");
 const PORT = Number(process.env.AUDIT_PORT ?? 4179);
-const arg = (name: string): string | undefined => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : undefined);
-const only = arg("--only");
-const reuseBuild = process.argv.includes("--no-build");
+
+// ── Arguments: every mistake is refused before anything is built or served ─────────────────────
+
+const USAGE = "usage: node scripts/ui-audit/capture.ts [--only <id-substring>[,<id-substring>…]] [--no-build] [--allow-dirty]";
+function refuse(message: string): never {
+  process.stderr.write(`capture: ${message}\n${USAGE}\n`);
+  process.exit(2);
+}
+
+let only: string[] | undefined;
+let reuseBuild = false;
+let allowDirty = false;
+for (let i = 2; i < process.argv.length; i++) {
+  const a = process.argv[i]!;
+  if (a === "--no-build") reuseBuild = true;
+  else if (a === "--allow-dirty") allowDirty = true;
+  else if (a === "--only" || a.startsWith("--only=")) {
+    const v = a === "--only" ? process.argv[++i] : a.slice("--only=".length);
+    if (!v || v.startsWith("--")) refuse("--only needs a value: a substring of the scenario ids to capture (several, comma-separated)");
+    if (only !== undefined) refuse("--only given twice: give several substrings comma-separated instead");
+    only = v.split(",").map((x) => x.trim());
+    if (only.some((x) => !x)) refuse(`--only "${v}" has an empty substring`);
+  } else if (a === "--help" || a === "-h") {
+    process.stdout.write(`${USAGE}\n`);
+    process.exit(0);
+  } else refuse(`unknown argument ${a}`);
+}
+
+for (const sc of scenarios)
+  if (sc.id.endsWith("~stub") !== (sc.data !== "real")) throw new Error(`scenario ${sc.id}: a stub scenario's id ends in ~stub, and only a stub's`);
+const selected = scenarios.filter((sc) => only === undefined || only.some((o) => sc.id.includes(o)));
+const unmatched = (only ?? []).filter((o) => !scenarios.some((sc) => sc.id.includes(o)));
+if (unmatched.length) refuse(`--only ${unmatched.map((o) => `"${o}"`).join(", ")} matches no scenario. The ids are:\n  ${scenarios.map((s) => s.id).join("\n  ")}`);
+
+const git = (...args: string[]) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" }).trim();
+const dirtyFiles = execFileSync("git", ["status", "--porcelain"], { cwd: REPO, encoding: "utf8" }).trimEnd();
+if (dirtyFiles && !allowDirty)
+  refuse(
+    "the working tree has uncommitted changes, so this capture could not be reproduced from its commit. " +
+      "Commit first (an audit logs captures by commit), or pass --allow-dirty for a capture you will not log as a revision.\n" +
+      dirtyFiles,
+  );
 
 const capturedAt = new Date().toISOString();
 const runId = capturedAt.replace(/[:.]/g, "-").slice(0, 19);
@@ -47,6 +93,8 @@ interface CellRecord {
   step: string;
   viewport: string;
   persona: PersonaKey;
+  /** The scheme the page rendered in (the viewport's OS setting, unless the theme menu overrode it). */
+  colorScheme: "light" | "dark";
   mode: "real" | "stub";
   data: string;
   url: string;
@@ -59,14 +107,37 @@ interface CellRecord {
 
 const cells: CellRecord[] = [];
 const modeOf = (sc: Scenario): "real" | "stub" => (sc.data === "real" ? "real" : "stub");
+const keyboardAt = (sc: Scenario, vp: Viewport): boolean => Boolean(sc.keyboard && (sc.keyboard.viewports ?? ["desktop"]).includes(vp));
 
-// ── The build and what it loads from elsewhere ───────────────────────────────────────────────────
+/** Every cell a scenario owes: each step at each viewport, then its keyboard walks. */
+const expectedCells = (sc: Scenario): { step: string; viewport: Viewport }[] =>
+  sc.viewports.flatMap((viewport) => [...sc.steps.map((st) => ({ step: st.name, viewport })), ...(keyboardAt(sc, viewport) ? [{ step: KEYBOARD, viewport }] : [])]);
 
-if (!reuseBuild) {
-  process.stdout.write("pnpm build …\n");
-  execSync("pnpm build", { cwd: REPO, stdio: ["ignore", "ignore", "inherit"] });
-}
-if (!existsSync(join(DIST, "index.html"))) throw new Error("no dist/index.html: run without --no-build");
+const blockedCell = (sc: Scenario, step: string, viewport: Viewport, reason: string): CellRecord => ({
+  scenario: sc.id,
+  step,
+  viewport,
+  persona: sc.persona,
+  colorScheme: viewportSizes[viewport].colorScheme,
+  mode: modeOf(sc),
+  data: sc.data,
+  url: "",
+  status: "blocked",
+  unasserted: [],
+  problems: [`not reached: ${reason}`],
+  consoleErrors: [],
+  files: {},
+});
+
+// ── Setup: the build, what it loads from elsewhere, the data sets, the server, the browser ──────
+// Assigned in setup(); a setup failure blocks every expected cell instead of leaving no manifest.
+
+let ORIGIN = `http://127.0.0.1:${PORT}`;
+let echartsFile!: { url: string; version: string; body: Buffer };
+let fixtures: Fixtures | undefined;
+let server: Served | undefined;
+let browser: Browser | undefined;
+let browserVersion: string | null = null;
 
 /**
  * The ECharts file the page asks cdnjs for, served from node_modules instead, but only if it is
@@ -85,17 +156,25 @@ function echartsFromNodeModules(): { url: string; version: string; body: Buffer 
     throw new Error(`node_modules/echarts/dist/echarts.min.js does not match index.html's ${integrity[1]} integrity: the CDN file differs, so captures cannot be hermetic`);
   return { url: tag[1], version: pkg.version, body };
 }
-const echartsFile = echartsFromNodeModules();
 
-// ── Data sets and the server ─────────────────────────────────────────────────────────────────────
+async function setup(): Promise<void> {
+  if (!reuseBuild) {
+    process.stdout.write("pnpm build …\n");
+    execSync("pnpm build", { cwd: REPO, stdio: ["ignore", "ignore", "inherit"] });
+  }
+  if (!existsSync(join(DIST, "index.html"))) throw new Error("no dist/index.html: run without --no-build");
+  echartsFile = echartsFromNodeModules();
+  const dataDirs: Record<string, string> = { real: join(DIST, "data"), ...writeFixtureSets() };
+  fixtures = realFixtures(JSON.parse(readFileSync(join(DIST, "data/index.json"), "utf8")) as Index);
+  server = await serve({ port: PORT, dist: DIST, data: dataDirs });
+  ORIGIN = server.origin;
+  browser = await chromium.launch();
+  browserVersion = browser.version();
+}
 
-const dataDirs: Record<string, string> = { real: join(DIST, "data"), ...writeFixtureSets() };
-const fixtures: Fixtures = realFixtures(JSON.parse(readFileSync(join(DIST, "data/index.json"), "utf8")) as Index);
-const server = await serve({ port: PORT, dist: DIST, data: dataDirs });
-const ORIGIN = server.origin;
-const BUILD =
+const BUILD = () =>
   process.env.AUDIT_BUILD ??
-  `${reuseBuild ? "dist/ from an earlier `pnpm build`" : "`pnpm build` (vite build, production)"}, served by scripts/ui-audit/serve.ts at ${ORIGIN}/<data set>/; ECharts ${echartsFile.version} from node_modules (integrity-checked)`;
+  `${reuseBuild ? "dist/ from an earlier `pnpm build`" : "`pnpm build` (vite build, production)"}, served by scripts/ui-audit/serve.ts at ${ORIGIN}/<data set>/; ECharts ${echartsFile?.version ?? "?"} from node_modules (integrity-checked)`;
 
 // ── Assertions ───────────────────────────────────────────────────────────────────────────────────
 
@@ -119,7 +198,15 @@ function trackRequests(page: Page) {
   page.on("requestfailed", done);
 }
 
-async function settle(page: Page) {
+/** Wait until the page is still. `holding`: requests are held on purpose, so don't wait for them. */
+async function settle(page: Page, holding = false) {
+  if (holding) {
+    await page.waitForLoadState("load");
+    await page.evaluate(() => document.fonts.ready);
+    // Past TanStack Router's default pendingMs (1 s), so a pending view the router would show is up.
+    await page.waitForTimeout(1500);
+    return;
+  }
   await page.waitForLoadState("networkidle");
   const t = inFlight.get(page);
   for (const deadline = Date.now() + 15_000; t && (t.count > 0 || Date.now() - t.last < 300); ) {
@@ -135,8 +222,13 @@ async function settle(page: Page) {
 }
 
 const matches = (actual: string, want: string | RegExp): boolean => (typeof want === "string" ? actual === want : want.test(actual));
+const contains = (actual: string, want: string | RegExp): boolean => (typeof want === "string" ? actual.includes(want) : want.test(actual));
 
-async function check(page: Page, sc: Scenario, exp: Expectation, route: string | RegExp | undefined): Promise<string[]> {
+/** The colour scheme the page renders in, from its root's computed `color-scheme`. */
+const schemeOf = async (page: Page): Promise<"light" | "dark"> =>
+  (await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme).catch(() => "")) === "dark" ? "dark" : "light";
+
+async function check(page: Page, sc: Scenario, vp: Viewport, exp: Expectation, route: string | RegExp | undefined): Promise<string[]> {
   const problems: string[] = [];
   const at = new URL(page.url());
   if (at.origin !== ORIGIN) problems.push(`left the site: ${page.url()}`);
@@ -157,6 +249,10 @@ async function check(page: Page, sc: Scenario, exp: Expectation, route: string |
   const wantNav = exp.nav ? [exp.nav] : [];
   if (active.join("|") !== wantNav.join("|")) problems.push(`active nav [${active.join(", ")}], expected [${wantNav.join(", ")}]`);
 
+  const wantScheme = exp.scheme ?? viewportSizes[vp].colorScheme;
+  const scheme = await schemeOf(page);
+  if (scheme !== wantScheme) problems.push(`renders ${scheme}, expected ${wantScheme}`);
+
   const titles = (await page.locator("h2").allInnerTexts()).map((t) => t.trim());
   if (exp.title === null) {
     if (titles.length) problems.push(`expected no section title, found "${titles[0]}"`);
@@ -170,15 +266,53 @@ async function check(page: Page, sc: Scenario, exp: Expectation, route: string |
       .catch(() => false);
     if (!shown) problems.push(`expected text ${t} not visible`);
   }
+  for (const t of exp.absent ?? []) {
+    const shown = await page
+      .getByText(t)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (shown) problems.push(`text ${t} is visible, and must not be`);
+  }
   if (exp.chartDots !== undefined) {
     const drawn = await page.evaluate(() => {
       const el = document.querySelector<HTMLElement>(".chart");
-      const chart = el && echarts.getInstanceByDom(el);
+      if (!el) return 0;
+      const chart = echarts.getInstanceByDom(el);
       if (!chart) return null;
       const series = (chart.getOption() as { series: { type?: string; data?: unknown[] }[] }).series;
-      return series.filter((s) => s.type === "custom").reduce((n, s) => n + (s.data?.length ?? 0), 0);
+      // replaceMerge leaves a null where a series was removed.
+      return series.filter((s) => s?.type === "custom").reduce((n, s) => n + (s.data?.length ?? 0), 0);
     });
     if (drawn !== exp.chartDots) problems.push(`chart has ${drawn ?? "no"} dots, expected ${exp.chartDots}`);
+  }
+  if (exp.tooltip) {
+    // ECharts puts its tooltip in a div beside the one holding the chart's SVG.
+    const tip = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>(".chart > div")]
+        .filter((d) => !d.querySelector("svg") && d.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && d.getBoundingClientRect().width > 1)
+        .map((d) => d.innerText)
+        .join("\n"),
+    );
+    if (!tip) problems.push("the chart's tooltip is not open");
+    else for (const t of exp.tooltip) if (!contains(tip, t)) problems.push(`tooltip does not show ${t}: it shows "${tip.replace(/\n/g, " / ").slice(0, 200)}"`);
+  }
+  if (exp.sorted) {
+    const { column, direction, values } = exp.sorted;
+    const table = page.locator("section.card", { has: page.getByRole("heading", { name: "Table", exact: true }) }).locator("table");
+    const got = await table.evaluate(
+      (t, col) => {
+        const ths = [...t.querySelectorAll("thead th")];
+        const i = ths.findIndex((th) => (th.textContent ?? "").trim().startsWith(col));
+        return {
+          sort: i < 0 ? null : ths[i]!.getAttribute("aria-sort"),
+          cells: i < 0 ? [] : [...t.querySelectorAll("tbody tr")].map((tr) => (tr.children[i]?.textContent ?? "").trim()),
+        };
+      },
+      column,
+    );
+    if (got.sort !== direction) problems.push(`the ${column} header's aria-sort is ${got.sort}, expected ${direction}`);
+    if (got.cells.join("\n") !== values.join("\n")) problems.push(`the ${column} column reads [${got.cells.join(", ")}], expected [${values.join(", ")}]`);
   }
   return problems;
 }
@@ -247,7 +381,7 @@ async function probes(page: Page) {
         width: Math.round(r.width),
         height: Math.round(r.height),
         overflowsCard: card ? r.right > card.right + 1 : null,
-        dots: option?.series?.filter((s) => s.type === "custom").reduce((n, s) => n + (s.data?.length ?? 0), 0) ?? null,
+        dots: option?.series?.filter((s) => s?.type === "custom").reduce((n, s) => n + (s.data?.length ?? 0), 0) ?? null,
       };
     });
     return {
@@ -283,14 +417,10 @@ async function fullShot(page: Page, path: string, height: number) {
 }
 
 /**
- * Tab from a fresh load until focus comes back to the first stop (`wrapped`: the walk is complete)
- * or `presses` runs out (`cap`: it isn't).
+ * Tab from the top of a freshly loaded page until focus comes back to the first stop (`wrapped`:
+ * the walk is complete) or `presses` runs out (`cap`: it isn't, and the cell fails).
  */
 async function keyboardWalk(page: Page, presses: number, base: string) {
-  // A reload, not a click or a goto: a click moves the sequential-focus starting point, and a goto
-  // to the same hash URL is a same-document navigation that keeps focus where it was.
-  await page.reload();
-  await settle(page);
   // The page the walk crosses, for context the focus crops cut away.
   await page.screenshot({ path: join(runDir, `${base}.keyboard.png`) });
   const stops: { stop: number; tag?: string; key?: string; [detail: string]: unknown }[] = [];
@@ -354,7 +484,7 @@ async function keyboardWalk(page: Page, presses: number, base: string) {
     }
     stops.push({ stop: i, exposed, ...info, key, file: info ? file : null });
   }
-  return { terminatedBy, stops };
+  return { terminatedBy, presses, stops };
 }
 
 // ── Running scenarios ────────────────────────────────────────────────────────────────────────────
@@ -379,21 +509,34 @@ async function hermetic(ctx: BrowserContext, external: string[]) {
   );
 }
 
-async function runScenario(browser: Browser, sc: Scenario) {
+async function runScenario(b: Browser, fx: Fixtures, sc: Scenario) {
   for (const vpKey of sc.viewports) {
     const size = viewportSizes[vpKey];
-    const ctx = await browser.newContext({
+    const ctx = await b.newContext({
       viewport: { width: size.width, height: size.height },
       deviceScaleFactor: size.scale ?? 1,
       isMobile: size.mobile ?? false,
       hasTouch: size.mobile ?? false,
-      colorScheme: sc.colorScheme ?? "light",
+      colorScheme: size.colorScheme,
       reducedMotion: "reduce",
       locale: "en-US",
       timezoneId: "UTC",
     });
     const external: string[] = [];
     await hermetic(ctx, external);
+    // Requests the scenario holds (the loading state): answered only once its cells are captured.
+    let release = () => {};
+    if (sc.hold) {
+      const hold = sc.hold;
+      const released = new Promise<void>((done) => (release = done));
+      await ctx.route(
+        (url) => url.origin === ORIGIN && hold.test(url.pathname),
+        async (route) => {
+          await released;
+          await route.continue().catch(() => {});
+        },
+      );
+    }
     const page = await ctx.newPage();
     trackRequests(page);
     const consoleErrors: string[] = [];
@@ -415,17 +558,40 @@ async function runScenario(browser: Browser, sc: Scenario) {
       const u = new URL(page.url());
       return u.origin === ORIGIN ? `${u.pathname}${u.search}${u.hash}` : page.url();
     };
-    await page.goto(`${ORIGIN}/${sc.data}/#${sc.route(fixtures)}`);
+    const record = (step: string, problems: string[], errorsBefore: number, files: Record<string, string>, colorScheme: "light" | "dark") => {
+      cells.push({
+        scenario: sc.id,
+        step,
+        viewport: vpKey,
+        persona: sc.persona,
+        colorScheme,
+        mode: modeOf(sc),
+        data: sc.data,
+        url: url(),
+        status: problems.length === 0 ? "valid" : "failed",
+        // The camera asserts everything it owes from the page itself; the contract's blind spots
+        // are declared there once, not here.
+        unasserted: [],
+        problems,
+        consoleErrors: consoleErrors.slice(errorsBefore),
+        files,
+      });
+      process.stdout.write(`${problems.length ? "✗" : "✓"} ${sc.id}.${step}@${vpKey}${problems.length ? `  — ${problems.join("; ")}` : ""}\n`);
+    };
+
+    await page.goto(`${ORIGIN}/${sc.data}/#${sc.route(fx)}`);
+    // The first step acts on a loaded page, never on one still fetching its data.
+    await settle(page, Boolean(sc.hold)).catch(() => {});
     for (const step of sc.steps) {
       const base = `${sc.id}.${step.name}@${vpKey}`;
       const problems: string[] = [];
       try {
-        if (step.act) await step.act(page, fixtures);
-        await settle(page);
-        const exp = step.expect(fixtures);
-        const route = exp.route ?? (step.act ? null : sc.route(fixtures));
+        if (step.act) await step.act(page, fx);
+        await settle(page, Boolean(sc.hold));
+        const exp = step.expect(fx);
+        const route = exp.route ?? (step.act ? null : sc.route(fx));
         if (route === null) problems.push("a step that acts must state the route it lands on");
-        problems.push(...(await check(page, sc, exp, route ?? undefined)));
+        problems.push(...(await check(page, sc, vpKey, exp, route ?? undefined)));
       } catch (e) {
         problems.push(`step threw: ${(e as Error).message.split("\n")[0]}`);
       }
@@ -462,109 +628,83 @@ async function runScenario(browser: Browser, sc: Scenario) {
         problems.push(`capture threw: ${(e as Error).message.split("\n")[0]}`);
       }
       consoleProblems(problems);
-      cells.push({
-        scenario: sc.id,
-        step: step.name,
-        viewport: vpKey,
-        persona: sc.persona,
-        mode: modeOf(sc),
-        data: sc.data,
-        url: url(),
-        status: problems.length === 0 ? "valid" : "failed",
-        // The pixels show the shell's brand and active nav; hover (the chart's tooltips) is never
-        // captured, so every number the chart shows only on hover goes unasserted.
-        unasserted: (await page.locator(".chart").count()) ? ["chart tooltips (hover) are not captured; the table below the chart is"] : [],
-        problems,
-        consoleErrors: consoleErrors.slice(errorsBefore),
-        files,
-      });
-      process.stdout.write(`${problems.length ? "✗" : "✓"} ${base}${problems.length ? `  — ${problems.join("; ")}` : ""}\n`);
+      record(step.name, problems, errorsBefore, files, await schemeOf(page));
     }
-    if (sc.keyboard && (sc.keyboard.viewports ?? ["desktop"]).includes(vpKey)) {
-      // The walk is a cell of its own (`<scenario>.keyboard@<viewport>`), so a walk that throws
-      // fails the run like any other cell.
+    release();
+
+    if (keyboardAt(sc, vpKey)) {
+      // The walk is a cell of its own (`<scenario>.keyboard@<viewport>`), so a walk that throws or
+      // never wraps fails the run like any other cell.
       const base = `${sc.id}@${vpKey}`;
       const problems: string[] = [];
       const errorsBefore = consumed;
       const files: Record<string, string> = {};
       try {
-        const walk = await keyboardWalk(page, sc.keyboard.presses, base);
+        // A reload, not a click or a goto: a click moves the sequential-focus starting point, and a
+        // goto to the same hash URL is a same-document navigation that keeps focus where it was. The
+        // reloaded page is asserted like a step (the last step's page; what only an interaction
+        // shows, a tooltip or a sort, does not survive a reload) before any stop is recorded.
+        await page.reload();
+        await settle(page);
+        const last = sc.steps.at(-1)!;
+        const exp: Expectation = { ...last.expect(fx), tooltip: undefined, sorted: undefined };
+        problems.push(...(await check(page, sc, vpKey, exp, exp.route ?? sc.route(fx))).map((p) => `after the reload: ${p}`));
+        const walk = await keyboardWalk(page, sc.keyboard!.presses, base);
         files.keyboard = `${base}.keyboard.json`;
         files.screenshot = `${base}.keyboard.png`;
         writeFileSync(join(runDir, files.keyboard), JSON.stringify(walk, null, 2));
         if (!walk.stops.some((s) => s.tag)) problems.push("no element ever took focus");
+        if (walk.terminatedBy !== "wrapped")
+          problems.push(`the walk ran out of ${walk.presses} presses before focus came back to the first stop: the page has more stops than the scenario allows, so raise keyboard.presses`);
       } catch (e) {
         problems.push(`walk threw: ${(e as Error).message.split("\n")[0]}`);
       }
       consoleProblems(problems);
-      cells.push({
-        scenario: sc.id,
-        step: KEYBOARD,
-        viewport: vpKey,
-        persona: sc.persona,
-        mode: modeOf(sc),
-        data: sc.data,
-        url: url(),
-        status: problems.length === 0 ? "valid" : "failed",
-        unasserted: [],
-        problems,
-        consoleErrors: consoleErrors.slice(errorsBefore),
-        files,
-      });
-      process.stdout.write(`${problems.length ? "✗" : "✓"} ${sc.id}.${KEYBOARD}@${vpKey}${problems.length ? `  — ${problems.join("; ")}` : ""}\n`);
+      record(KEYBOARD, problems, errorsBefore, files, await schemeOf(page));
     }
     await ctx.close();
   }
 }
 
-for (const sc of scenarios)
-  if (sc.id.endsWith("~stub") !== (modeOf(sc) === "stub")) throw new Error(`scenario ${sc.id}: a stub scenario's id ends in ~stub, and only a stub's`);
+// ── The run ──────────────────────────────────────────────────────────────────────────────────────
 
-const selected = scenarios.filter((sc) => !only || sc.id.includes(only));
+let setupError: string | undefined;
 const blockedBy = new Map<string, string>();
-let browserVersion = "";
 try {
-  const browser = await chromium.launch();
-  browserVersion = browser.version();
-  try {
+  await setup();
+} catch (e) {
+  setupError = (e as Error).message.split("\n")[0] ?? String(e);
+  process.stdout.write(`✗ setup failed — ${setupError}\n`);
+}
+try {
+  if (!setupError && browser && fixtures)
     for (const sc of selected) {
       try {
-        await runScenario(browser, sc);
+        await runScenario(browser, fixtures, sc);
       } catch (e) {
         blockedBy.set(sc.id, (e as Error).message.split("\n")[0] ?? "");
         process.stdout.write(`✗ ${sc.id}  — ${(e as Error).message.split("\n")[0]}\n`);
       }
     }
-  } finally {
-    await browser.close();
-  }
 } finally {
-  await server.close();
+  await browser?.close().catch(() => {});
+  await server?.close();
 }
 
 // Every expected cell is accounted for: one the run never reached is blocked.
 for (const sc of selected)
-  for (const vp of sc.viewports)
-    for (const step of [...sc.steps.map((st) => st.name), ...(sc.keyboard && (sc.keyboard.viewports ?? ["desktop"]).includes(vp) ? [KEYBOARD] : [])])
-      if (!cells.some((c) => c.scenario === sc.id && c.step === step && c.viewport === vp))
-        cells.push({
-          scenario: sc.id,
-          step,
-          viewport: vp,
-          persona: sc.persona,
-          mode: modeOf(sc),
-          data: sc.data,
-          url: "",
-          status: "blocked",
-          unasserted: [],
-          problems: [`not reached: ${blockedBy.get(sc.id) ?? "an earlier step threw"}`],
-          consoleErrors: [],
-          files: {},
-        });
+  for (const { step, viewport } of expectedCells(sc))
+    if (!cells.some((c) => c.scenario === sc.id && c.step === step && c.viewport === viewport))
+      cells.push(blockedCell(sc, step, viewport, setupError ? `setup failed: ${setupError}` : (blockedBy.get(sc.id) ?? "an earlier step threw")));
 
-const git = (...args: string[]) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" }).trim();
 // Read from node_modules: not every package exports its package.json.
-const version = (pkg: string) => (JSON.parse(readFileSync(join(REPO, "node_modules", pkg, "package.json"), "utf8")) as { version: string }).version;
+const version = (pkg: string) => {
+  try {
+    return (JSON.parse(readFileSync(join(REPO, "node_modules", pkg, "package.json"), "utf8")) as { version: string }).version;
+  } catch {
+    return null;
+  }
+};
 writeFileSync(
   join(runDir, "manifest.json"),
   JSON.stringify(
@@ -572,15 +712,17 @@ writeFileSync(
       runId,
       capturedAt,
       base: ORIGIN,
-      build: BUILD,
+      build: BUILD(),
       commit: git("rev-parse", "HEAD"),
-      dirty: git("status", "--porcelain").length > 0,
+      dirty: dirtyFiles.length > 0,
+      only: only ?? null,
+      setupError: setupError ?? null,
       browser: browserVersion,
       playwright: version("@playwright/test"),
       axe: version("@axe-core/playwright"),
       node: process.version,
       fixtures: {
-        real: { results: fixtures.real.results, newest: fixtures.real.newest.id, compare: fixtures.real.compare },
+        real: fixtures ? { results: fixtures.real.results, newest: fixtures.real.newest.id, compare: fixtures.real.compare } : null,
         stub: describeSets(),
         sets: Object.fromEntries(["real", ...STUB_SETS].map((s) => [s, `${ORIGIN}/${s}/`])),
       },

@@ -4,10 +4,23 @@
 // scripts/build-index.ts read), indexed by build-index's own buildIndex() against a fixture builds
 // registry, so a set's data/ is what the site would load if those files were in results/.
 //
-// Everything here is deterministic: no clock, no randomness. Ids and sha256s are hashes of fixed
-// strings, so a scenario can name a result and get the same page every run. The files carry no
-// records: nothing in the site reads them, and they could not be verified anyway (these results
-// were never run).
+// Nothing here is a measurement, and nothing here may look like one. Every implementation, build,
+// version, machine, CPU and project is self-evidently synthetic (`alpha 1.0.0-fixture`, `Fixture
+// CPU A`, `fixture-app`), every hash starts with zeros, and no ratio mirrors a published result. A
+// screenshot of a `~stub` cell is captioned "synthetic fixture data, not measurements" wherever it is
+// committed (docs/ui/audits/README.md).
+//
+// The numbers are internally consistent the way Parallax makes them: each figure is the median of
+// deterministic synthetic rounds, its interval is the distribution-free median interval at that
+// round count (so its confidence follows from n, and it is rarely symmetric), each call is derived
+// from the interval exactly as Parallax's callOf() does, and `settled` and `clean` follow from the
+// calls. A spec names the call it means to show (`expect`); the numbers have to produce it, or
+// writing the sets throws.
+//
+// Everything is deterministic: no clock, no randomness. Ids and sha256s are hashes of fixed strings,
+// so a scenario can name a result and get the same page every run. The files carry no records:
+// nothing in the site reads them, and they could not be verified anyway (these results were never
+// run).
 //
 //   node scripts/ui-audit/fixtures.ts [out-dir]     writes every set, as capture.ts does
 
@@ -23,7 +36,76 @@ export const STUB_SETS: readonly StubSet[] = ["empty", "one", "many"];
 
 export const FIXTURES_OUT = resolve(import.meta.dirname, "fixtures/out");
 
-const hex = (s: string, n = 64): string => createHash("sha256").update(`ui-audit fixture: ${s}`).digest("hex").slice(0, n);
+const digest = (s: string): string => createHash("sha256").update(`ui-audit fixture: ${s}`).digest("hex");
+/** A hash of a fixed string, led by zeros so it reads as synthetic wherever it is shown. */
+const hex = (s: string, n = 64): string => `000000${digest(s)}`.slice(0, n);
+
+// ── Statistics, as Parallax computes them (parallax src/timing/stats.ts) ─────────────────────────
+
+const median = (xs: readonly number[]): number => {
+  const s = [...xs].sort((a, b) => a - b);
+  const pos = (s.length - 1) / 2;
+  return (s[Math.floor(pos)]! + s[Math.ceil(pos)]!) / 2;
+};
+
+/**
+ * Distribution-free interval for the median: [x(k), x(n+1-k)] with the largest k whose coverage,
+ * 1 - 2·P(Binomial(n, 1/2) < k), reaches `target`. Below that (fewer than 6 rounds at 95%), the
+ * whole range, with the confidence it really has: 75% at 3 rounds.
+ */
+function medianInterval(values: readonly number[], target: number): Interval {
+  const n = values.length;
+  const s = [...values].sort((a, b) => a - b);
+  const below: number[] = [];
+  let term = 0.5 ** n;
+  let sum = 0;
+  for (let j = 0; j <= n; j++) {
+    sum += term;
+    below.push(sum);
+    term = (term * (n - j)) / (j + 1);
+  }
+  const coverage = (k: number): number => Math.max(0, 1 - 2 * below[k - 1]!);
+  let k = 1;
+  while (k + 1 <= Math.ceil(n / 2) && coverage(k + 1) >= target) k++;
+  return { estimate: median(s), low: s[k - 1]!, high: s[n - k]!, confidence: coverage(k), n };
+}
+
+/** The confidence a call needs after n accepted rounds: the false-call budget split over the looks. */
+function lookConfidence(n: number, plan: { runs: number; maxRuns: number }): number {
+  const looks = [plan.runs];
+  for (let x = plan.runs + 3; x < plan.maxRuns; x += 3) looks.push(x);
+  if (plan.maxRuns > plan.runs) looks.push(plan.maxRuns);
+  if (looks.length === 1) return 0.9;
+  return n <= plan.runs ? 0.95 : 1 - 0.05 / (looks.length - 1);
+}
+
+const SETTLED: readonly Call[] = ["faster", "slower", "same"];
+const RESOLUTION = 0.05;
+const RESOLUTION_MS = 1;
+
+/** The half-width of "same": the resolution, widened where the floor is larger than it. */
+const sameWithin = (unit: "ms" | "bytes", refEstimate: number): number => Math.max(RESOLUTION, unit === "ms" ? RESOLUTION_MS / refEstimate : 0);
+
+function callOf(ratio: Interval, confidence: number, same: number): Call {
+  if (ratio.confidence < confidence - 1e-12) return "too few rounds";
+  const sameFirst = same > RESOLUTION + 1e-12;
+  const inSame = ratio.low >= 1 - same && ratio.high <= 1 + same;
+  if (sameFirst && inSame) return "same";
+  if (ratio.high < 1 && ratio.estimate <= 0.99) return "faster";
+  if (ratio.low > 1 && ratio.estimate >= 1.01) return "slower";
+  if (inSame) return "same";
+  return "unresolved";
+}
+
+/**
+ * n synthetic rounds around `center`: log-normal-ish scatter of relative width `spread`, from a
+ * hash of `seed`, shifted so their median is `center`. Never symmetric about it.
+ */
+function rounds(seed: string, n: number, center: number, spread: number): number[] {
+  const u = Array.from({ length: n }, (_, i) => Number.parseInt(digest(`${seed} round ${i}`).slice(0, 8), 16) / 2 ** 31 - 1);
+  const m = median(u);
+  return u.map((x) => center * Math.exp(spread * (x - m)));
+}
 
 // ── Builds: what the fixture registry knows, and one binary it does not ─────────────────────────
 
@@ -39,22 +121,25 @@ interface BuildSpec {
   registered: boolean;
 }
 
+const SOURCE = "synthetic fixture build: never built, never run";
 const BUILDS = {
-  tsc702: { implementation: "tsc 7", version: "7.0.2", source: "npm typescript@7.0.2", profile: "tsc7", side: "tsc7.0.2", registered: true },
-  tsc71: { implementation: "tsc 7", version: "7.1.0-beta (3e9236361fa9)", source: "go build of a TypeScript beta commit", profile: "tsc7", side: "tsc7.1-beta", registered: true },
-  tsrs: { implementation: "tsrs", version: "0.25.0-ts7.1.0-beta", source: "npm tsrs@0.25.0-ts7.1.0-beta", profile: "tsrs", side: "tsrs", registered: true },
-  fork: { implementation: "tsc-rs fork", version: "main e7847f46d", source: "cargo build of the fork's main (local build)", profile: "tsc-rs-fork", side: "tsc-rs-fork", registered: true },
+  // The reference, and a newer build of the same implementation.
+  base: { implementation: "alpha", version: "1.0.0-fixture", source: SOURCE, profile: "alpha", side: "alpha-1.0", registered: true },
+  alphaNext: { implementation: "alpha", version: "1.1.0-fixture.rc (fixture00000)", source: SOURCE, profile: "alpha", side: "alpha-1.1-rc", registered: true },
+  beta: { implementation: "beta", version: "0.9.0-fixture", source: SOURCE, profile: "beta", side: "beta", registered: true },
+  gamma: { implementation: "gamma", version: "main fixture0", source: SOURCE, profile: "gamma", side: "gamma", registered: true },
   // A long version string: the label the chart, its chips and every table must make room for.
-  tsrsNightly: {
-    implementation: "tsrs",
-    version: "0.26.0-nightly.2026-11-14+incremental-checker-rewrite (local build, not reproducible)",
-    source: "a local build of a tsrs nightly branch",
-    profile: "tsrs",
-    side: "tsrs-nightly",
+  betaLong: {
+    implementation: "beta",
+    version: "0.10.0-fixture.nightly+a-deliberately-long-version-label-for-width-testing (synthetic)",
+    source: SOURCE,
+    profile: "beta",
+    side: "beta-long-label",
     registered: true,
   },
-  // A binary builds.json does not list: the site names it by hash.
-  forkLocal: { implementation: "tsc-rs fork", version: "", source: "", profile: "tsc-rs-fork", side: "tsc-rs-fork-local", registered: false },
+  // A binary builds.json does not list: the site names it by hash (build-index takes the
+  // implementation from its profile).
+  gammaLocal: { implementation: "gamma", version: "", source: "", profile: "gamma", side: "gamma-local", registered: false },
 } satisfies Record<string, BuildSpec>;
 type BuildKey = keyof typeof BUILDS;
 
@@ -98,8 +183,8 @@ const MACHINES = {
     id: `${hex("machine linux", 8)}-0000-4000-8000-000000000001`,
     platform: "linux",
     arch: "x64",
-    kernel: "6.12.0",
-    cpuModel: "AMD Ryzen 9 9950X 16-Core Processor",
+    kernel: "6.0.0-fixture",
+    cpuModel: "Fixture CPU A (16 cores)",
     cpus: 32,
     memGb: 64,
     state: { governors: ["performance"], boost: true, smt: "on", power: null, lowPowerMode: null, powerPlan: null },
@@ -110,10 +195,10 @@ const MACHINES = {
     id: `${hex("machine mac", 8)}-0000-4000-8000-000000000002`,
     platform: "darwin",
     arch: "arm64",
-    kernel: "25.1.0",
-    cpuModel: "Apple M4 Pro",
-    cpus: 14,
-    memGb: 48,
+    kernel: "25.0.0-fixture",
+    cpuModel: "Fixture SoC B",
+    cpus: 12,
+    memGb: 32,
     state: { governors: null, boost: null, smt: null, power: "AC", lowPowerMode: false, powerPlan: null },
     accounting: "rusage",
     counters: "none",
@@ -122,8 +207,8 @@ const MACHINES = {
     id: `${hex("machine windows", 8)}-0000-4000-8000-000000000003`,
     platform: "win32",
     arch: "x64",
-    kernel: "10.0.26200",
-    cpuModel: "Intel(R) Core(TM) Ultra 9 285K",
+    kernel: "10.0.0-fixture",
+    cpuModel: "Fixture CPU C (24 cores)",
     cpus: 24,
     memGb: 32,
     state: { governors: null, boost: null, smt: null, power: "AC", lowPowerMode: null, powerPlan: "Balanced" },
@@ -136,8 +221,8 @@ const MACHINES = {
     id: `${hex("machine laptop", 8)}-0000-4000-8000-000000000004`,
     platform: "darwin",
     arch: "arm64",
-    kernel: "25.1.0",
-    cpuModel: "Apple M3 Max (16-core CPU, 40-core GPU, unusually long model string from a custom kernel)",
+    kernel: "25.0.0-fixture",
+    cpuModel: "Fixture SoC D (16-core CPU, 40-core GPU, an unusually long model string for label-width testing)",
     cpus: 16,
     memGb: 128,
     state: { governors: null, boost: null, smt: null, power: "battery", lowPowerMode: true, powerPlan: null },
@@ -148,36 +233,32 @@ const MACHINES = {
 type MachineKey = keyof typeof MACHINES;
 
 const PROJECTS = {
-  hono: { name: "hono", suite: true, repository: "https://github.com/honojs/hono" },
-  umami: { name: "umami", suite: true, repository: "https://github.com/umami-software/umami" },
-  // Sorts last, so the compare page's default project stays hono; not in the suite, and dirty.
+  app: { name: "fixture-app", suite: true, repository: "https://example.com/fixtures/fixture-app" },
+  lib: { name: "fixture-lib", suite: true, repository: "https://example.com/fixtures/fixture-lib" },
+  // Sorts last, so the compare page's default project stays fixture-app; not in the suite, and dirty.
   long: { name: "zz-a-deliberately-long-project-name-that-is-not-in-the-suite", suite: false, repository: null },
 } satisfies Record<string, { name: string; suite: boolean; repository: string | null }>;
 type ProjectKey = keyof typeof PROJECTS;
 
-// ── Results ──────────────────────────────────────────────────────────────────────────────────────
+/** The default project the stub compare views open on (the first, sorted). */
+export const DEFAULT_PROJECT = PROJECTS.app.name;
 
-const iv = (estimate: number, spread = 0.03, n = 6, bounds?: [number, number]): Interval => ({
-  estimate,
-  low: bounds?.[0] ?? estimate * (1 - spread),
-  high: bounds?.[1] ?? estimate * (1 + spread),
-  confidence: 0.96875,
-  n,
-});
+// ── Results ──────────────────────────────────────────────────────────────────────────────────────
 
 type LspKey = (typeof METRICS)["lsp-bench"][number]["key"];
 
 interface Measure {
+  // The median ratio of the synthetic rounds, and how widely they scatter (relative).
   ratio: number;
-  call: Call | null;
   spread?: number;
-  // An explicit interval, for a noisy candidate whose interval is not symmetric.
-  bounds?: [number, number];
+  // The call this is meant to show. It is not written: the call is derived from the interval, and
+  // a mismatch throws, so the numbers and the call can never disagree.
+  expect: Call | null;
 }
 
 interface CandidateSpec {
   build: BuildKey;
-  // cli-bench: the wall-time ratio and call, per thread mode (`single` only when the result ran it).
+  // cli-bench: the wall-time ratio per thread mode (`single` only when the result ran it).
   default?: Measure;
   single?: Measure;
   // lsp-bench: per metric (default threads only).
@@ -197,13 +278,15 @@ interface ResultSpec {
   refMs?: { default: number; single?: number };
   refMetrics?: Partial<Record<LspKey, number>>;
   candidates: CandidateSpec[];
+  // Accepted + rejected + failed = attempts.
   rounds?: { planned?: number; accepted?: number; attempts?: number; rejected?: number; failed?: number };
-  settled?: boolean;
   notes?: string[];
   rejections?: Record<string, number>;
   projectClean?: boolean;
   priority?: number;
 }
+
+type CandidateState = "measured" | "failed" | "noisy";
 
 /** A published result as the fixtures write it: the fields parallax publishes, minus records. */
 export interface FixtureResult {
@@ -243,7 +326,7 @@ export interface FixtureResult {
       label: string;
       ref: string;
       mode: Mode;
-      state: "measured" | "failed";
+      state: CandidateState;
       wallRatio?: Interval | null;
       cpuRatio?: Interval | null;
       call?: Call | null;
@@ -260,8 +343,9 @@ const defined = <T,>(r: Partial<Record<string, T>> | undefined): [string, T][] =
   Object.entries(r ?? {}).flatMap(([k, v]) => (v === undefined ? [] : [[k, v] as [string, T]]));
 
 const HARNESS_COMMIT = hex("harness commit", 40);
+const MIN_ROUNDS = 3;
 
-function makeResult(s: ResultSpec): FixtureResult {
+function makeResult(name: string, s: ResultSpec): FixtureResult {
   const m: MachineSpec = MACHINES[s.machine];
   const project = PROJECTS[s.project];
   const modes: Mode[] = s.kind === "cli-bench" && s.candidates.some((c) => c.single) ? ["default", "single"] : ["default"];
@@ -271,60 +355,86 @@ function makeResult(s: ResultSpec): FixtureResult {
     role,
     profile: BUILDS[b].profile,
     binSha256: binSha(b, m.platform),
-    version: BUILDS[b].registered ? `Version ${BUILDS[b].version}` : null,
+    version: BUILDS[b].registered ? `${BUILDS[b].implementation} ${BUILDS[b].version}` : null,
     mode,
   });
   const sides = modes.flatMap((mode) => [side(s.ref, "ref", mode), ...s.candidates.filter((c) => mode === "default" || c.single).map((c) => side(c.build, "cand", mode))]);
 
-  const rounds = { planned: 6, max: 15, accepted: 6, attempts: 6, rejected: 0, failed: 0, ...s.rounds };
+  const r = { planned: 6, max: 15, accepted: 6, attempts: 6, rejected: 0, failed: 0, ...s.rounds };
+  if (r.accepted + r.rejected + r.failed !== r.attempts) throw new Error(`fixture ${name}: rounds do not add up to attempts`);
+  const n = r.accepted;
+  const confidence = lookConfidence(n, { runs: r.planned, maxRuns: r.max });
+  const stateOf = (c: CandidateSpec): CandidateState => (c.failed ? "failed" : n < MIN_ROUNDS ? "noisy" : "measured");
+  const interval = (seed: string, center: number, spread: number): Interval => medianInterval(rounds(`${name} ${seed}`, n, center, spread), confidence);
+  const calls: (Call | null)[] = [];
+  const called = (where: string, ratio: Interval, state: CandidateState, same: number, want: Measure): Call | null => {
+    const call = state === "measured" ? callOf(ratio, confidence, same) : null;
+    if (call !== want.expect) throw new Error(`fixture ${name}, ${where}: its numbers give "${call}", the spec expects "${want.expect}"`);
+    calls.push(call);
+    return call;
+  };
+
   const summarySides: FixtureResult["summary"]["sides"] = [];
   const candidates: FixtureResult["summary"]["candidates"] = [];
   if (s.kind === "cli-bench") {
     for (const mode of modes) {
       const base = s.refMs ?? { default: 100 };
       const refMs = mode === "single" ? (base.single ?? base.default * 2.5) : base.default;
-      summarySides.push({ label: sideLabel(s.ref, mode), role: "ref", mode, wallMs: iv(refMs), cpuMs: iv(refMs * (mode === "single" ? 1 : 4.5)) });
+      const refLabel = sideLabel(s.ref, mode);
+      const refWall = interval(`${refLabel} wall`, refMs, 0.03);
+      summarySides.push({ label: refLabel, role: "ref", mode, wallMs: refWall, cpuMs: interval(`${refLabel} cpu`, refMs * (mode === "single" ? 1 : 4.5), 0.04) });
       for (const c of s.candidates) {
         const measure = mode === "single" ? c.single : c.default;
         if (!measure && !c.failed) continue;
         const label = sideLabel(c.build, mode);
-        const ratio = measure && !c.failed ? iv(measure.ratio, measure.spread, rounds.accepted, measure.bounds) : null;
-        summarySides.push({ label, role: "cand", mode, wallMs: ratio ? iv(refMs * ratio.estimate) : null, cpuMs: ratio ? iv(refMs * ratio.estimate * 3) : null });
+        const state = stateOf(c);
+        const same = sameWithin("ms", refWall.estimate);
+        const ratio = measure && !c.failed ? interval(`${label} wall ratio`, measure.ratio, measure.spread ?? 0.03) : null;
+        summarySides.push({
+          label,
+          role: "cand",
+          mode,
+          wallMs: ratio ? interval(`${label} wall`, refMs * ratio.estimate, 0.03) : null,
+          cpuMs: ratio ? interval(`${label} cpu`, refMs * ratio.estimate * 3, 0.04) : null,
+        });
         candidates.push({
           label,
-          ref: sideLabel(s.ref, mode),
+          ref: refLabel,
           mode,
-          state: c.failed ? "failed" : "measured",
+          state,
           wallRatio: ratio,
-          cpuRatio: ratio ? iv(ratio.estimate * 0.8, 0.05, rounds.accepted) : null,
-          call: c.failed ? null : (measure?.call ?? null),
-          sameWithin: 0.05,
+          cpuRatio: ratio ? interval(`${label} cpu ratio`, ratio.estimate * 0.8, 0.05) : null,
+          call: ratio && measure ? called(label, ratio, state, same, measure) : null,
+          sameWithin: same,
         });
       }
     }
   } else {
-    const refMetrics = new Map(defined(s.refMetrics));
-    summarySides.push({
-      label: sideLabel(s.ref, "default"),
-      role: "ref",
-      mode: "default",
-      metrics: Object.fromEntries([...refMetrics].map(([k, v]) => [k, iv(v)])),
-    });
+    const refLabel = sideLabel(s.ref, "default");
+    const refMetrics = new Map(defined(s.refMetrics).map(([k, v]) => [k, interval(`${refLabel} ${k}`, v, 0.03)]));
+    summarySides.push({ label: refLabel, role: "ref", mode: "default", metrics: Object.fromEntries(refMetrics) });
     for (const c of s.candidates) {
       const label = sideLabel(c.build, "default");
-      const metrics = defined(c.metrics).map(([k, x]) => [k, c.failed ? null : iv(x.ratio, x.spread, rounds.accepted, x.bounds), x] as const);
+      const state = stateOf(c);
+      const metrics = defined(c.metrics).map(([k, x]) => [k, c.failed ? null : interval(`${label} ${k} ratio`, x.ratio, x.spread ?? 0.03), x] as const);
       summarySides.push({
         label,
         role: "cand",
         mode: "default",
-        metrics: Object.fromEntries(metrics.map(([k, r]) => [k, r ? iv((refMetrics.get(k) ?? 100) * r.estimate) : null])),
+        metrics: Object.fromEntries(metrics.map(([k, ratio]) => [k, ratio ? interval(`${label} ${k}`, (refMetrics.get(k)?.estimate ?? 100) * ratio.estimate, 0.03) : null])),
       });
       candidates.push({
         label,
-        ref: sideLabel(s.ref, "default"),
+        ref: refLabel,
         mode: "default",
-        state: c.failed ? "failed" : "measured",
-        metrics: Object.fromEntries(metrics.map(([k, r, x]) => [k, { ratio: r, call: r ? x.call : null, sameWithin: 0.05 }])),
+        state,
+        metrics: Object.fromEntries(
+          metrics.map(([k, ratio, x]) => {
+            const unit = METRICS["lsp-bench"].find((mi) => mi.key === k)?.unit ?? "ms";
+            const same = sameWithin(unit, refMetrics.get(k)?.estimate ?? 100);
+            return [k, { ratio, call: ratio ? called(`${label} ${k}`, ratio, state, same, x) : null, sameWithin: same }];
+          }),
+        ),
       });
     }
   }
@@ -335,7 +445,7 @@ function makeResult(s: ResultSpec): FixtureResult {
     publishedAt: s.finishedAt,
     machine: { id: m.id },
     project: { ...project, commit: hex(`${s.project} commit`, 40), clean: s.projectClean ?? true },
-    harness: { name: "parallax", version: "0.0.0", gitCommit: HARNESS_COMMIT, gitDirty: false, node: "v24.11.0" },
+    harness: { name: "parallax", version: "0.0.0-fixture", gitCommit: HARNESS_COMMIT, gitDirty: false, node: "v24.11.0" },
     host: {
       platform: m.platform,
       kernel: m.kernel,
@@ -348,7 +458,7 @@ function makeResult(s: ResultSpec): FixtureResult {
       accounting: m.accounting,
       counters: m.counters,
     },
-    settings: { threads: modes, runs: rounds.planned, maxRuns: rounds.max, minRounds: 3, resolution: 0.05, resolutionMs: 1 },
+    settings: { threads: modes, runs: r.planned, maxRuns: r.max, minRounds: MIN_ROUNDS, resolution: RESOLUTION, resolutionMs: RESOLUTION_MS },
     sides,
     notes: s.notes ?? [],
     createdAt: s.finishedAt,
@@ -356,157 +466,159 @@ function makeResult(s: ResultSpec): FixtureResult {
     records: [],
     summary: {
       schema: s.kind === "cli-bench" ? "parallax.bench-summary/1" : "parallax.lsp-bench-summary/1",
-      rounds,
-      minRounds: 3,
-      confidence: 0.95,
+      rounds: r,
+      minRounds: MIN_ROUNDS,
+      confidence,
       rejections: s.rejections ?? {},
       sides: summarySides,
       candidates,
-      settled: s.settled ?? true,
-      clean: true,
+      // As Parallax has them: settled when every call of a candidate that ran is one more rounds would
+      // not change; clean when every candidate was measured.
+      settled: candidates.every((c) => c.state === "failed") || calls.every((c) => c !== null && SETTLED.includes(c)),
+      clean: candidates.every((c) => c.state === "measured"),
     },
   };
-  // Like a published id: a hash of the result without it, 16 hex digits.
-  return { ...body, id: createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 16) };
+  // Like a published id, a hash of the result without it (16 hex digits), led by zeros.
+  return { ...body, id: `0000${createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 12)}` };
 }
 
-const fast = (ratio: number, spread?: number): Measure => ({ ratio, call: "faster", spread });
+const fast = (ratio: number, spread?: number): Measure => ({ ratio, spread, expect: "faster" });
 
 /** Every fixture result, by the name scenarios use for it. */
 export const RESULTS = {
   // The typical result: three candidates, both thread modes, every call "faster".
-  honoLinux: makeResult({
+  appLinux: makeResult("appLinux", {
     kind: "cli-bench",
-    project: "hono",
+    project: "app",
     machine: "linux",
-    finishedAt: "2026-11-10T09:12:00.000Z",
-    ref: "tsc702",
-    refMs: { default: 340, single: 820 },
+    finishedAt: "2026-01-10T09:12:00.000Z",
+    ref: "base",
+    refMs: { default: 260, single: 610 },
     candidates: [
-      { build: "tsrs", default: fast(0.32), single: fast(0.27) },
-      { build: "fork", default: fast(0.35), single: fast(0.45) },
-      { build: "tsc71", default: fast(0.77), single: fast(0.72) },
+      { build: "beta", default: fast(0.55), single: fast(0.48) },
+      { build: "gamma", default: fast(0.62), single: fast(0.7) },
+      { build: "alphaNext", default: fast(0.88), single: fast(0.84) },
     ],
     rounds: { attempts: 7, rejected: 1 },
-    rejections: { "canary slower than the fastest canary": 1 },
+    rejections: { "fixture gate: a round was rejected": 1 },
   }),
   // A second machine: "same" and "slower".
-  honoMac: makeResult({
+  appMac: makeResult("appMac", {
     kind: "cli-bench",
-    project: "hono",
+    project: "app",
     machine: "mac",
-    finishedAt: "2026-11-12T18:40:00.000Z",
-    ref: "tsc702",
-    refMs: { default: 290 },
+    finishedAt: "2026-01-12T18:40:00.000Z",
+    ref: "base",
+    refMs: { default: 310 },
     candidates: [
-      { build: "tsrs", default: { ratio: 1.01, call: "same", spread: 0.02 } },
-      { build: "fork", default: { ratio: 1.18, call: "slower", spread: 0.04 } },
+      { build: "beta", default: { ratio: 1.004, spread: 0.015, expect: "same" } },
+      { build: "gamma", default: { ratio: 1.18, spread: 0.04, expect: "slower" } },
     ],
   }),
-  // A noisy result: an interval that spans "same", an unregistered binary, unsettled, with notes.
-  honoWindows: makeResult({
+  // A noisy result: an interval that spans "same", an unregistered binary, run to the round limit
+  // and still unsettled, with notes.
+  appWindows: makeResult("appWindows", {
     kind: "cli-bench",
-    project: "hono",
+    project: "app",
     machine: "windows",
-    finishedAt: "2026-11-14T07:05:00.000Z",
-    ref: "tsc702",
-    refMs: { default: 410 },
+    finishedAt: "2026-01-14T07:05:00.000Z",
+    ref: "base",
+    refMs: { default: 420 },
     candidates: [
-      { build: "tsrs", default: { ratio: 0.93, call: "unresolved", bounds: [0.62, 1.38] } },
-      { build: "forkLocal", default: fast(0.4, 0.08) },
+      { build: "beta", default: { ratio: 0.93, spread: 0.35, expect: "unresolved" } },
+      { build: "gammaLocal", default: fast(0.4, 0.08) },
     ],
     rounds: { planned: 6, accepted: 15, attempts: 21, rejected: 6 },
-    settled: false,
-    notes: ["load rose above the idle gate during 6 rounds; they were rejected and re-run", "the machine's power plan is Balanced, not High performance"],
-    rejections: { "outside load over 1 core": 4, "canary drift over 10%": 2 },
+    notes: ["fixture note: some rounds were rejected and re-run", "fixture note: the machine's power plan is not High performance"],
+    rejections: { "fixture gate: outside load": 4, "fixture gate: canary drift": 2 },
   }),
-  umamiLinux: makeResult({
+  libLinux: makeResult("libLinux", {
     kind: "cli-bench",
-    project: "umami",
+    project: "lib",
     machine: "linux",
-    finishedAt: "2026-11-11T09:30:00.000Z",
-    ref: "tsc702",
-    refMs: { default: 1250, single: 3900 },
+    finishedAt: "2026-01-11T09:30:00.000Z",
+    ref: "base",
+    refMs: { default: 980, single: 2600 },
     candidates: [
-      { build: "tsrs", default: fast(0.41), single: fast(0.33) },
-      { build: "fork", default: fast(0.29), single: fast(0.52) },
+      { build: "beta", default: fast(0.58), single: fast(0.51) },
+      { build: "gamma", default: fast(0.66), single: fast(0.74) },
     ],
   }),
-  // Every edge at once: a long project name, a long build label, a failed candidate, too few
-  // rounds, a dirty project, Low Power Mode on battery, lowered priority.
-  edge: makeResult({
+  // Every edge at once: a long project name, a long build label, a failed candidate, the minimum
+  // rounds (so every call is "too few rounds"), a dirty project, Low Power Mode on battery, lowered
+  // priority.
+  edge: makeResult("edge", {
     kind: "cli-bench",
     project: "long",
     machine: "laptop",
-    finishedAt: "2026-11-09T22:15:00.000Z",
-    ref: "tsc702",
-    refMs: { default: 5120 },
+    finishedAt: "2026-01-09T22:15:00.000Z",
+    ref: "base",
+    refMs: { default: 4300 },
     candidates: [
-      { build: "tsrsNightly", default: { ratio: 0.21, call: "too few rounds", spread: 0.2 } },
-      { build: "fork", failed: true },
-      { build: "tsc71", default: { ratio: 0.023, call: "faster", spread: 0.1 } },
+      { build: "betaLong", default: { ratio: 0.21, spread: 0.2, expect: "too few rounds" } },
+      { build: "gamma", failed: true },
+      { build: "alphaNext", default: { ratio: 0.023, spread: 0.1, expect: "too few rounds" } },
     ],
-    rounds: { planned: 6, accepted: 2, attempts: 9, rejected: 3, failed: 4 },
-    settled: false,
-    notes: ["running on battery in Low Power Mode: results are slower and noisier than on AC power", "the harness ran at lowered priority (nice 10)", "tsc-rs-fork failed every round: exit code 101"],
-    rejections: { "canary slower than the fastest canary": 2, "outside load over 1 core": 1 },
+    rounds: { planned: 6, accepted: 3, attempts: 9, rejected: 3, failed: 3 },
+    notes: ["fixture note: on battery in Low Power Mode", "fixture note: the harness ran at lowered priority", "fixture note: candidate gamma failed every round"],
+    rejections: { "fixture gate: a round was rejected": 2, "fixture gate: outside load": 1 },
     projectClean: false,
     priority: 10,
   }),
-  // Language-server benches: a subset of metrics, with every call.
-  honoLsp: makeResult({
+  // Language-server benches: a subset of metrics, with every call they can make.
+  appLsp: makeResult("appLsp", {
     kind: "lsp-bench",
-    project: "hono",
+    project: "app",
     machine: "linux",
-    finishedAt: "2026-11-15T11:00:00.000Z",
-    ref: "tsc702",
+    finishedAt: "2026-01-15T11:00:00.000Z",
+    ref: "base",
     refMetrics: {
-      "open.firstDiagnosticsMs": 1850,
-      "open.initializeMs": 120,
-      "edit.firstRequestMs": 85,
-      "edit.diagnosticsMs": 240,
-      "typing.completionP50Ms": 38,
-      "typing.completionP95Ms": 96,
-      "session.memoryBytes": 912 * 2 ** 20,
+      "open.firstDiagnosticsMs": 1400,
+      "open.initializeMs": 150,
+      "edit.firstRequestMs": 70,
+      "edit.diagnosticsMs": 210,
+      "typing.completionP50Ms": 44,
+      "typing.completionP95Ms": 110,
+      "session.memoryBytes": 700 * 2 ** 20,
     },
     candidates: [
       {
-        build: "tsrs",
+        build: "beta",
         metrics: {
-          "open.firstDiagnosticsMs": fast(0.42),
-          "open.initializeMs": { ratio: 1.02, call: "same" },
-          "edit.firstRequestMs": fast(0.6),
-          "edit.diagnosticsMs": fast(0.5),
-          "typing.completionP50Ms": { ratio: 0.97, call: "unresolved", bounds: [0.7, 1.3] },
-          "typing.completionP95Ms": { ratio: 1.3, call: "slower" },
-          "session.memoryBytes": fast(0.55),
+          "open.firstDiagnosticsMs": fast(0.47),
+          "open.initializeMs": { ratio: 0.995, spread: 0.012, expect: "same" },
+          "edit.firstRequestMs": fast(0.64),
+          "edit.diagnosticsMs": fast(0.53),
+          "typing.completionP50Ms": { ratio: 0.97, spread: 0.3, expect: "unresolved" },
+          "typing.completionP95Ms": { ratio: 1.27, expect: "slower" },
+          "session.memoryBytes": fast(0.6),
         },
       },
       {
-        build: "fork",
+        build: "gamma",
         metrics: {
-          "open.firstDiagnosticsMs": fast(0.38),
-          "open.initializeMs": { ratio: 1.6, call: "slower" },
-          "edit.firstRequestMs": fast(0.7),
-          "edit.diagnosticsMs": fast(0.45),
-          "typing.completionP50Ms": fast(0.8),
-          "typing.completionP95Ms": fast(0.85),
-          "session.memoryBytes": { ratio: 1.4, call: "slower" },
+          "open.firstDiagnosticsMs": fast(0.51),
+          "open.initializeMs": { ratio: 1.45, expect: "slower" },
+          "edit.firstRequestMs": fast(0.73),
+          "edit.diagnosticsMs": fast(0.49),
+          "typing.completionP50Ms": fast(0.82),
+          "typing.completionP95Ms": fast(0.88),
+          "session.memoryBytes": { ratio: 1.35, expect: "slower" },
         },
       },
     ],
   }),
-  umamiLspMac: makeResult({
+  libLspMac: makeResult("libLspMac", {
     kind: "lsp-bench",
-    project: "umami",
+    project: "lib",
     machine: "mac",
-    finishedAt: "2026-11-16T15:20:00.000Z",
-    ref: "tsc702",
-    refMetrics: { "open.firstDiagnosticsMs": 4200, "edit.diagnosticsMs": 610, "session.memoryBytes": 2100 * 2 ** 20 },
+    finishedAt: "2026-01-16T15:20:00.000Z",
+    ref: "base",
+    refMetrics: { "open.firstDiagnosticsMs": 3600, "edit.diagnosticsMs": 520, "session.memoryBytes": 1500 * 2 ** 20 },
     candidates: [
       {
-        build: "tsrs",
-        metrics: { "open.firstDiagnosticsMs": fast(0.5), "edit.diagnosticsMs": fast(0.62), "session.memoryBytes": fast(0.7) },
+        build: "beta",
+        metrics: { "open.firstDiagnosticsMs": fast(0.56), "edit.diagnosticsMs": fast(0.67), "session.memoryBytes": fast(0.74) },
       },
     ],
   }),
@@ -516,8 +628,8 @@ export type ResultName = keyof typeof RESULTS;
 /** Which results each stub set publishes. */
 export const SETS: Record<StubSet, readonly ResultName[]> = {
   empty: [],
-  one: ["honoLinux"],
-  many: ["honoLinux", "honoMac", "honoWindows", "umamiLinux", "edge", "honoLsp", "umamiLspMac"],
+  one: ["appLinux"],
+  many: ["appLinux", "appMac", "appWindows", "libLinux", "edge", "appLsp", "libLspMac"],
 };
 
 /** A result's repository path, as `parallax publish` names it. */
@@ -527,7 +639,24 @@ const resultPath = (r: FixtureResult): string =>
 /** A set's index, exactly as build-index makes it (with a fixed generatedAt). */
 export function stubIndex(set: StubSet): Index {
   const results = SETS[set].map((name) => ({ file: resultPath(RESULTS[name]), result: RESULTS[name] }));
-  return { ...buildIndex(results, REGISTRY), generatedAt: "2026-11-17T00:00:00.000Z" };
+  return { ...buildIndex(results, REGISTRY), generatedAt: "2026-01-17T00:00:00.000Z" };
+}
+
+/** The `many` set must keep showing every state the scenarios photograph; this says which it lost. */
+function missingStates(): string[] {
+  const index = stubIndex("many");
+  const results = SETS.many.map((n) => RESULTS[n]);
+  const calls = new Set(index.comparisons.map((c) => c.call));
+  const missing: string[] = [];
+  for (const call of ["faster", "slower", "same", "unresolved", "too few rounds"] as const) if (!calls.has(call)) missing.push(`a "${call}" call`);
+  if (!results.some((r) => r.summary.candidates.some((c) => c.state === "failed"))) missing.push("a failed candidate");
+  if (!results.some((r) => !r.summary.settled)) missing.push("an unsettled result");
+  if (!results.some((r) => r.notes.length)) missing.push("notes");
+  if (new Set(results.map((r) => r.kind)).size < 2) missing.push("both kinds");
+  if (new Set(results.map((r) => r.machine.id)).size < 3) missing.push("three machines");
+  if (!index.builds.some((b) => !b.known)) missing.push("an unregistered build");
+  if (!index.builds.some((b) => b.label.length > 60)) missing.push("a long build label");
+  return missing;
 }
 
 /**
@@ -535,6 +664,8 @@ export function stubIndex(set: StubSet): Index {
  * `data/` (what the site loads: index.json and results/<id>.json). Returns the data directories.
  */
 export function writeFixtureSets(out = FIXTURES_OUT): Record<StubSet, string> {
+  const missing = missingStates();
+  if (missing.length) throw new Error(`the "many" fixture set no longer has ${missing.join(", ")}: the scenarios need them`);
   rmSync(out, { recursive: true, force: true });
   const dirs = {} as Record<StubSet, string>;
   for (const set of STUB_SETS) {

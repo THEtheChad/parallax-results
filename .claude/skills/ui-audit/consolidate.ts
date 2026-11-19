@@ -185,9 +185,11 @@ function shape(raw: unknown, at: string, problems: string[]): Finding | null {
 
 // Files a finding's evidence names. A bare file name (`compare.page@desktop.png`) is a run file; a
 // path from one of the repo's top-level directories (`site/src/components/Layout/Layout.tsx:12`) is
-// a repo file. Neither matches in the middle of a longer path.
+// a repo file. Neither matches in the middle of a longer path. A repo path ends at a line number, a
+// space, punctuation, a closing backtick or bracket (`docs/ui/AUDIT.md`, [site/src/x.tsx]), or a
+// full stop that ends the sentence; a path may still hold brackets (site/src/routes/[id].tsx).
 const RUN_FILE = /(?<![\w.~@/-])[\w.~@-]+\.(?:png|json|yml|txt)\b(?!\/)/g;
-const REPO_FILE = /(?<![\w.~@/-])((?:site|docs|scripts|test|results|\.claude)\/[\w./[\]()@~$-]*?\.[a-z]+)(?=[:\s,;)]|$)/g;
+const REPO_FILE = /(?<![\w.~@/-])((?:site|docs|scripts|test|results|\.claude)\/[\w./[\]()@~$-]*?\.[a-z]+)(?=[:\s,;)`\]]|\.(?:\s|$)|$)/g;
 
 export function validate(
   byReviewer: Map<string, unknown[]>,

@@ -19,7 +19,7 @@ Cover:
 - axe violations, deduped by root cause across cells;
 - each restricted persona, where there is more than one: are users told why something is missing or read-only, or is it silently absent?
 - error, empty, loading, disabled and refused states;
-- each cell's `unasserted` list in `manifest.json`: a check the camera couldn't make is a lead.
+- each cell's `unasserted` list in `manifest.json`: a check the camera owed the cell (route, `h1`, shell or identity, fixture text) and couldn't make from the pixels. The orchestrator files each as a finding already; use them as leads to the root cause. The known blind spots in `CAMERA.md` (motion, hover where no step captures it) are never in `unasserted` and are not findings; where one hides a state that matters, report the missing cell as a harness defect.
 
 Map each axe or probe result to its root-cause component, citing `file:line` in `evidence`, with the path from the repo root (`site/src/…`).
 

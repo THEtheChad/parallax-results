@@ -41,9 +41,17 @@ function inside(root: string, rest: string): string | undefined {
 export function serve(opts: { port: number; dist: string; data: Record<string, string> }): Promise<Served> {
   const dist = resolve(opts.dist);
   const server = createServer((req, res) => {
-    const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
+    let path: string;
+    try {
+      path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
+    } catch {
+      // Malformed percent-encoding (`/real/%ZZ`): the client's mistake, not a crash.
+      res.writeHead(400, { "content-type": "text/plain" }).end("bad request");
+      return;
+    }
     const [, set, ...rest] = path.split("/");
-    const dataDir = set ? opts.data[set] : undefined;
+    // Own keys only: `/constructor/…` must not find Object.prototype.constructor.
+    const dataDir = set && Object.hasOwn(opts.data, set) ? opts.data[set] : undefined;
     let file: string | undefined;
     if (dataDir && rest[0] === "data") file = inside(resolve(dataDir), rest.slice(1).join("/"));
     else if (dataDir) file = inside(dist, rest.join("/") || "index.html");
