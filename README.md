@@ -45,3 +45,12 @@ node scripts/verify-results.ts
 ```
 
 Node 24 (`.node-version`), pnpm (pinned in `package.json`).
+
+## UI audit
+
+The site's UI is audited with the `ui-audit` Claude Code skill (`.claude/skills/ui-audit/`): run
+`/ui-audit <surfaces>` in Claude Code. A deterministic camera (`scripts/ui-audit/`) photographs a
+production build; three reviewers on different model families, blind to each other, judge the
+photographs; the owner triages; every fix is checked against new photographs.
+[docs/ui/AUDIT.md](docs/ui/AUDIT.md) is the audit's configuration (surfaces, viewports, the visual
+spec, the component vocabulary) and links the reports.
