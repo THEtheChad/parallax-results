@@ -7,7 +7,7 @@ import { buildLabel, DEFAULT_PROJECT, RESULTS, stubIndex, type FixtureResult, ty
 /*
  * The audit's scenarios (docs/ui/AUDIT.md): sparse by construction. A data state appears only on
  * the surfaces that show it, a viewport only where layout is at stake. Every step states what a
- * healthy page shows (the hash route, the h1, the shell's active nav item, the section title and
+ * healthy page shows (the hash route, the page's h1, the shell's active nav item, the first section title and
  * text from the data set), so the camera can refuse to photograph the wrong page.
  *
  * There is no sign-in: the "identity" the camera contract asks the shell to show is the site's own
@@ -28,7 +28,7 @@ export const personas: Record<PersonaKey, Persona> = {
 /** Where a scenario's data comes from: results/ as built (`real`), or a fixture set (`stub`). */
 export type DataSet = "real" | StubSet;
 
-/** The site's brand: the only h1, on every page (site/src/components/Layout). */
+/** The site's brand, in the header of every page (site/src/components/Layout). Each page has its own h1. */
 export const BRAND = "Parallax results";
 
 export type NavItem = "Compare" | "Results" | "About";
@@ -91,7 +91,7 @@ export interface Expectation {
    * A step with no `act` defaults to the scenario's own route; a step that acts states it.
    */
   readonly route?: string | RegExp;
-  /** The page's one h1. Defaults to the brand: every page has the same one. */
+  /** The page's one h1, which names the page and its selection. Unsaid: any non-empty h1. */
   readonly heading?: string | RegExp;
   /** The nav item the shell marks active; null where none should be (a result page). */
   readonly nav: NavItem | null;
@@ -168,30 +168,51 @@ export const viewportSizes: Record<Viewport, ViewportSize> = {
 
 const still = (expect: Step["expect"]): readonly Step[] => [{ name: "page", expect }];
 
-/** A result page's section title (ResultView). */
-const resultTitle = (r: { kind: Kind; project: string; date: string }): string => `${KIND_LABEL[r.kind]} · ${r.project} · ${r.date}`;
-const fixtureTitle = (r: FixtureResult): string => resultTitle({ kind: r.kind, project: r.project.name, date: r.finishedAt.slice(0, 10) });
 const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** A compare view's section title (CompareView): metric · project · against the reference. */
-function compareTitle(index: Index, project?: string): string {
-  const d = compareDefaults(index, project);
+/** A result page's h1 (ResultView): the way back to the list, then kind · project · date. */
+const resultHeading = (r: { kind: Kind; project: string; date: string }): RegExp => new RegExp(`${escape(`${KIND_LABEL[r.kind]} · ${r.project} · ${r.date}`)}$`);
+const fixtureHeading = (r: FixtureResult): RegExp => resultHeading({ kind: r.kind, project: r.project.name, date: r.finishedAt.slice(0, 10) });
+/** A result page's sections: the session first. */
+const RESULT_TITLE = "the session";
+
+/** The compare page's first section: the filters. Its h1 (the billboard's) names the selection. */
+const COMPARE_TITLE = "tune in";
+const compareHeading = (kind: Kind, project: string, metric: string): string => `${KIND_LABEL[kind]} · ${project} · ${metric}`;
+/** The real compare view's h1, reference and dot count, for one project (the first if unsaid). */
+const realCompare = (fx: Fixtures, project?: string): Pick<Expectation, "heading" | "title" | "chartDots"> & { reference: string } => {
+  const d = compareDefaults(fx.real.index, project);
   const p = project ?? d.shown[0]?.project ?? "";
-  return `${d.metric} · ${p} · against ${index.builds.find((b) => b.key === d.reference)?.label ?? "–"}`;
-}
-/** The real compare view's title and dot count, for one project (the first if unsaid). */
-const realCompare = (fx: Fixtures, project?: string): Pick<Expectation, "title" | "chartDots"> => ({
-  title: compareTitle(fx.real.index, project),
-  chartDots: compareDefaults(fx.real.index, project).shown.length,
-});
+  return {
+    heading: compareHeading(d.kind, p, d.metric),
+    title: COMPARE_TITLE,
+    chartDots: d.shown.length,
+    reference: `1× = ${fx.real.index.builds.find((b) => b.key === d.reference)?.label ?? "–"}`,
+  };
+};
+/** realCompare as an expectation, with the reference proved by the chart's legend. */
+const realCompareExpect = (fx: Fixtures, project?: string, text: readonly (string | RegExp)[] = []): Pick<Expectation, "heading" | "title" | "chartDots" | "text"> => {
+  const { reference, ...rest } = realCompare(fx, project);
+  return { ...rest, text: [reference, ...text] };
+};
 
 /** The comparisons a compare view should draw, from a stub set's index. */
 const dots = (set: StubSet, keep: (c: Index["comparisons"][number]) => boolean): number => stubIndex(set).comparisons.filter(keep).length;
 const appWall = (c: Index["comparisons"][number]): boolean => c.kind === "cli-bench" && c.project === DEFAULT_PROJECT && c.metric === "cli.wallMs";
-const stubTitle = (metric: string): string => `${metric} · ${DEFAULT_PROJECT} · against ${buildLabel("base")}`;
+/** A stub compare view's h1 and first section, with its reference proved by the chart's legend. */
+const stubCompare = (metric: string, kind: Kind = "cli-bench"): Pick<Expectation, "heading" | "title"> & { reference: string } => ({
+  heading: compareHeading(kind, DEFAULT_PROJECT, metric),
+  title: COMPARE_TITLE,
+  reference: `1× = ${buildLabel("base")}`,
+});
 
 const EMPTY = "No results have been published yet.";
-const COMPARE_LEDE = /Each dot is one published result/;
+const COMPARE_LEDE = /One mark is one result/;
+const TABLE = "liner notes";
+const RESULTS_HEADING = "All results · newest first";
+const RESULTS_TITLE = "the sessions";
+const NOT_FOUND = "end of side A";
+const published = (n: number): string => `${n} published result${n === 1 ? "" : "s"}`;
 const BETA = buildLabel("beta");
 const ALPHA_NEXT = buildLabel("alphaNext");
 const LONG_LABEL = buildLabel("betaLong");
@@ -240,8 +261,7 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone", "tablet", "zoom200"],
     steps: still((fx) => ({
       nav: "Compare",
-      ...realCompare(fx),
-      text: [COMPARE_LEDE, "Table"],
+      ...realCompareExpect(fx, undefined, [COMPARE_LEDE, TABLE]),
     })),
     // Zoomed is where keyboard users who also magnify lose the focus ring off-screen.
     keyboard: { presses: 70, viewports: ["desktop", "zoom200"] },
@@ -254,8 +274,9 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone"],
     steps: still((fx) => ({
       nav: "Results",
-      title: "All results",
-      text: [`${fx.real.results} published result${fx.real.results === 1 ? "" : "s"}`, fx.real.newest.id.slice(0, 8)],
+      heading: RESULTS_HEADING,
+      title: RESULTS_TITLE,
+      text: [published(fx.real.results), fx.real.newest.id.slice(0, 8)],
     })),
     keyboard: { presses: 40 },
   },
@@ -265,7 +286,7 @@ export const scenarios: readonly Scenario[] = [
     data: "real",
     route: (fx) => `/result/${fx.real.newest.id}`,
     viewports: ["desktop", "phone", "zoom200"],
-    steps: still((fx) => ({ nav: null, title: resultTitle(fx.real.newest), text: ["Binaries", "Comparisons", fx.real.newest.machine.cpuModel] })),
+    steps: still((fx) => ({ nav: null, heading: resultHeading(fx.real.newest), title: RESULT_TITLE, text: ["binaries", "every metric", "Record it again", fx.real.newest.machine.cpuModel] })),
     keyboard: { presses: 40 },
   },
   {
@@ -274,7 +295,7 @@ export const scenarios: readonly Scenario[] = [
     data: "real",
     route: () => "/about",
     viewports: ["desktop", "phone"],
-    steps: still(() => ({ nav: "About", title: "What this is", text: ["Contributing results", "CONTRIBUTING.md"] })),
+    steps: still(() => ({ nav: "About", heading: "About · liner notes", title: "Side A · how to read it", text: ["What this is", "Side B · run it on your machine", "CONTRIBUTING.md"] })),
     keyboard: { presses: 30 },
   },
   // ── Real data: the states a visitor reaches without a fixture ───────────────────────────────────
@@ -305,7 +326,7 @@ export const scenarios: readonly Scenario[] = [
           return {
             route: "/",
             nav: "Compare",
-            ...realCompare(fx),
+            ...realCompareExpect(fx),
             tooltip: [fmtInterval(c.ratio), `${c.ratio.n} rounds`, `${platformName(r.machine.platform)} · ${r.machine.cpuModel}`],
           };
         },
@@ -323,11 +344,11 @@ export const scenarios: readonly Scenario[] = [
       {
         name: "sort-by-build",
         act: async (page) => {
-          const table = page.locator("section.card", { has: page.getByRole("heading", { name: "Table", exact: true }) });
+          const table = page.locator("section", { has: page.getByRole("heading", { name: TABLE, exact: true }) });
           await table.getByRole("button", { name: "Build", exact: true }).press("Enter");
           await table.locator('th[aria-sort="ascending"]', { hasText: "Build" }).waitFor();
         },
-        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompare(fx), sorted: { column: "Build", direction: "ascending", values: byBuild(fx) } }),
+        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompareExpect(fx), sorted: { column: "Build", direction: "ascending", values: byBuild(fx) } }),
       },
     ],
   },
@@ -353,7 +374,8 @@ export const scenarios: readonly Scenario[] = [
         expect: (fx) => ({
           route: /^\/\?hide=[^&]+$/,
           nav: "Compare",
-          title: realCompare(fx).title,
+          heading: realCompare(fx).heading,
+          title: COMPARE_TITLE,
           chartDots: 0,
           text: ["Nothing left to show: every build is hidden."],
         }),
@@ -368,29 +390,27 @@ export const scenarios: readonly Scenario[] = [
     data: "real",
     route: () => "/?project=gone&metric=nope&os=plan9&hide=stale",
     viewports: ["desktop"],
-    steps: still((fx) => ({ nav: "Compare", ...realCompare(fx), text: [COMPARE_LEDE] })),
+    steps: still((fx) => ({ nav: "Compare", ...realCompareExpect(fx, undefined, [COMPARE_LEDE]) })),
   },
   {
-    // A mistyped link: what the router renders for a route it does not know.
+    // A mistyped link: the site's not-found page, the end of the tape, with the way back.
     id: "unknown-route",
     persona: "visitor",
     data: "real",
     route: () => "/bogus/typo",
     viewports: ["desktop"],
-    steps: still(() => ({ nav: null, title: null, text: ["Not Found"] })),
+    steps: still(() => ({ nav: null, heading: NOT_FOUND, title: null, text: ["Nothing was recorded at this address", "Rewind to Compare"] })),
   },
   {
-    // The page while data/index.json is still on its way, photographed 1.5 s in. Asserted: the
-    // shell, and that no data has arrived. Layout's "Loading results…" fallback is not asserted:
-    // at the time of writing it never shows (the router's own boundary catches the suspension), and
-    // the camera photographs what a visitor sees rather than what the code intends.
+    // The page while data/index.json is still on its way, photographed 1.5 s in: the shell, the
+    // loading state (the router's pending component), and no data.
     id: "loading",
     persona: "visitor",
     data: "real",
     route: () => "/",
     viewports: ["desktop"],
     hold: /\/data\/index\.json$/,
-    steps: still(() => ({ nav: "Compare", title: null, absent: [COMPARE_LEDE, "Table", "No results have been published yet."] })),
+    steps: still(() => ({ nav: "Compare", heading: "Loading results…", title: null, absent: [COMPARE_LEDE, TABLE, EMPTY] })),
   },
   // ── Journey: list → a result → Back → compare → a filter, the hash route held at each step ──────
   {
@@ -400,14 +420,14 @@ export const scenarios: readonly Scenario[] = [
     route: () => "/results",
     viewports: ["desktop"],
     steps: [
-      { name: "list", expect: (fx) => ({ nav: "Results", title: "All results", text: [fx.real.newest.id.slice(0, 8)] }) },
+      { name: "list", expect: (fx) => ({ nav: "Results", heading: RESULTS_HEADING, title: RESULTS_TITLE, text: [fx.real.newest.id.slice(0, 8)] }) },
       {
         name: "open-newest",
         act: async (page, fx) => {
-          await page.getByRole("link", { name: fx.real.newest.id.slice(0, 8), exact: true }).click();
+          await page.getByRole("link", { name: fx.real.newest.id.slice(0, 8) }).first().click();
           await page.waitForURL((u) => u.hash === `#/result/${fx.real.newest.id}`);
         },
-        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, title: resultTitle(fx.real.newest) }),
+        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, heading: resultHeading(fx.real.newest), title: RESULT_TITLE }),
       },
       {
         name: "browser-back",
@@ -415,7 +435,7 @@ export const scenarios: readonly Scenario[] = [
           await page.goBack();
           await page.waitForURL((u) => u.hash === "#/results");
         },
-        expect: (fx) => ({ route: "/results", nav: "Results", title: "All results", text: [fx.real.newest.id.slice(0, 8)] }),
+        expect: (fx) => ({ route: "/results", nav: "Results", heading: RESULTS_HEADING, title: RESULTS_TITLE, text: [fx.real.newest.id.slice(0, 8)] }),
       },
       {
         name: "nav-compare",
@@ -423,7 +443,7 @@ export const scenarios: readonly Scenario[] = [
           await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Compare" }).click();
           await page.waitForURL((u) => u.hash === "#/");
         },
-        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompare(fx), text: [COMPARE_LEDE] }),
+        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompareExpect(fx, undefined, [COMPARE_LEDE]) }),
       },
       {
         // Needs a second project; the real results have had two since the first publish.
@@ -431,13 +451,16 @@ export const scenarios: readonly Scenario[] = [
         act: async (page, fx) => {
           const other = fx.real.compare.projects[1];
           if (!other) throw new Error("the real results have one project: this step needs two");
-          await page.getByLabel("Project").selectOption(other);
+          // A few projects are a segmented control; many are a select.
+          const group = page.getByRole("group", { name: "Project" });
+          if (await group.count()) await group.getByRole("button", { name: other, exact: true }).click();
+          else await page.getByLabel("Project").selectOption(other);
           await page.waitForURL((u) => u.hash.includes("project="));
         },
         expect: (fx) => ({
           route: `/?project=${encodeURIComponent(fx.real.compare.projects[1] ?? "")}`,
           nav: "Compare",
-          ...realCompare(fx, fx.real.compare.projects[1]),
+          ...realCompareExpect(fx, fx.real.compare.projects[1]),
         }),
       },
     ],
@@ -454,27 +477,27 @@ export const scenarios: readonly Scenario[] = [
       {
         name: "choose-dark",
         act: async (page) => {
-          await page.getByRole("combobox", { name: "Theme" }).selectOption("dark");
+          await page.getByRole("group", { name: "Theme" }).getByRole("button", { name: "Dark theme" }).click();
           await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
         },
-        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompare(fx), scheme: "dark" }),
+        expect: (fx) => ({ route: "/", nav: "Compare", ...realCompareExpect(fx), scheme: "dark" }),
       },
       {
         name: "open-result",
         act: async (page, fx) => {
           await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Results" }).click();
           await page.waitForURL((u) => u.hash === "#/results");
-          await page.getByRole("link", { name: fx.real.newest.id.slice(0, 8), exact: true }).click();
+          await page.getByRole("link", { name: fx.real.newest.id.slice(0, 8) }).first().click();
           await page.waitForURL((u) => u.hash === `#/result/${fx.real.newest.id}`);
         },
-        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, title: resultTitle(fx.real.newest), text: [fx.real.newest.machine.cpuModel], scheme: "dark" }),
+        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, heading: resultHeading(fx.real.newest), title: RESULT_TITLE, text: [fx.real.newest.machine.cpuModel], scheme: "dark" }),
       },
       {
         name: "reload",
         act: async (page) => {
           await page.reload();
         },
-        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, title: resultTitle(fx.real.newest), text: [fx.real.newest.machine.cpuModel], scheme: "dark" }),
+        expect: (fx) => ({ route: `/result/${fx.real.newest.id}`, nav: null, heading: resultHeading(fx.real.newest), title: RESULT_TITLE, text: [fx.real.newest.machine.cpuModel], scheme: "dark" }),
       },
     ],
   },
@@ -485,7 +508,7 @@ export const scenarios: readonly Scenario[] = [
     data: "empty",
     route: () => "/",
     viewports: ["desktop", "phone"],
-    steps: still(() => ({ nav: "Compare", title: null, text: [EMPTY] })),
+    steps: still(() => ({ nav: "Compare", heading: "blank tape", title: null, text: [EMPTY, "Run it on your machine"] })),
   },
   {
     id: "results-empty~stub",
@@ -493,16 +516,17 @@ export const scenarios: readonly Scenario[] = [
     data: "empty",
     route: () => "/results",
     viewports: ["desktop"],
-    steps: still(() => ({ nav: "Results", title: null, text: [EMPTY] })),
+    steps: still(() => ({ nav: "Results", heading: RESULTS_HEADING, title: "blank tape", text: [EMPTY] })),
   },
   {
-    // A link to a result that is not (or no longer) published: the fetch 404s and the page says so.
+    // A link to a result that is not (or no longer) published: the index does not list it, so the
+    // page is the not-found page (nothing is fetched).
     id: "result-missing~stub",
     persona: "visitor",
     data: "empty",
     route: () => "/result/0000000000000000",
     viewports: ["desktop"],
-    steps: still(() => ({ nav: null, title: null, text: [/Could not load the results: result 0000000000000000: HTTP 404/] })),
+    steps: still(() => ({ nav: null, heading: NOT_FOUND, title: null, text: ["Nothing was recorded at this address"] })),
     allowConsole: [/status of 404/, /HTTP 404/, /The above error occurred/],
   },
   // ── One result ───────────────────────────────────────────────────────────────────────────────────
@@ -514,8 +538,8 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone"],
     steps: still(() => ({
       nav: "Compare",
-      title: stubTitle("wall time"),
-      text: ["1 result from 1 machine", BETA],
+      ...stubCompare("wall time"),
+      text: ["1 result from 1 machine", BETA, stubCompare("wall time").reference],
       chartDots: dots("one", appWall),
     })),
   },
@@ -525,7 +549,7 @@ export const scenarios: readonly Scenario[] = [
     data: "one",
     route: () => "/results",
     viewports: ["desktop"],
-    steps: still(() => ({ nav: "Results", title: "All results", text: ["1 published result,", RESULTS.appLinux.id.slice(0, 8)] })),
+    steps: still(() => ({ nav: "Results", heading: RESULTS_HEADING, title: RESULTS_TITLE, text: [published(1), RESULTS.appLinux.id.slice(0, 8)] })),
   },
   // ── Many results: projects, both benchmarks, four machines, every call ──────────────────────────
   {
@@ -536,8 +560,8 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "desktop-dark", "phone", "zoom200"],
     steps: still(() => ({
       nav: "Compare",
-      title: stubTitle("wall time"),
-      text: ["3 results from 3 machines", "unresolved", "slower", "same ±5%", buildLabel("gammaLocal")],
+      ...stubCompare("wall time"),
+      text: ["3 results from 3 machines", "unresolved", "slower", "same ±5%", buildLabel("gammaLocal"), stubCompare("wall time").reference],
       chartDots: dots("many", appWall),
     })),
   },
@@ -549,8 +573,8 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone"],
     steps: still(() => ({
       nav: "Compare",
-      title: stubTitle("open: first diagnostics"),
-      text: ["1 result from 1 machine", BETA],
+      ...stubCompare("open: first diagnostics", "lsp-bench"),
+      text: ["1 result from 1 machine", BETA, stubCompare("open: first diagnostics", "lsp-bench").reference],
       chartDots: dots("many", (c) => c.kind === "lsp-bench" && c.project === DEFAULT_PROJECT && c.metric === "open.firstDiagnosticsMs"),
     })),
   },
@@ -563,8 +587,8 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop"],
     steps: still(() => ({
       nav: "Compare",
-      title: stubTitle("CPU time"),
-      text: ["this metric gets no call", "1 result from 1 machine"],
+      ...stubCompare("CPU time"),
+      text: ["this metric gets no call", "1 result from 1 machine", stubCompare("CPU time").reference],
       chartDots: dots("many", (c) => c.project === DEFAULT_PROJECT && c.metric === "cli.cpuMs" && c.mode === "default" && c.result === RESULTS.appMac.id),
     })),
   },
@@ -576,8 +600,9 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone"],
     steps: still(() => ({
       nav: "Results",
-      title: "All results",
-      text: ["7 published results", "Language server", RESULTS.edge.project.name, "(not in the suite)", LONG_LABEL],
+      heading: RESULTS_HEADING,
+      title: RESULTS_TITLE,
+      text: [published(7), "Language server", RESULTS.edge.project.name, "(not in the suite)", LONG_LABEL],
     })),
   },
   {
@@ -591,13 +616,14 @@ export const scenarios: readonly Scenario[] = [
     viewports: ["desktop", "phone", "zoom200"],
     steps: still(() => ({
       nav: null,
-      title: fixtureTitle(RESULTS.edge),
+      heading: fixtureHeading(RESULTS.edge),
+      title: RESULT_TITLE,
       text: [
         "too few rounds",
         "Low Power Mode on",
         "priority lowered (10)",
         "had local changes",
-        "Notes from the bench",
+        "From the bench",
         "Rejected rounds",
         fmtRatio(Math.min(...RESULTS.edge.summary.candidates.flatMap((c) => (c.wallRatio ? [c.wallRatio.estimate] : [])))),
       ],
@@ -609,7 +635,7 @@ export const scenarios: readonly Scenario[] = [
     data: "many",
     route: () => `/result/${RESULTS.appWindows.id}`,
     viewports: ["desktop"],
-    steps: still(() => ({ nav: null, title: fixtureTitle(RESULTS.appWindows), text: ["unresolved", buildLabel("gammaLocal"), "not every call settled", "plan: Balanced"] })),
+    steps: still(() => ({ nav: null, heading: fixtureHeading(RESULTS.appWindows), title: RESULT_TITLE, text: ["unresolved", buildLabel("gammaLocal"), "not every call settled", "plan: Balanced"] })),
   },
   {
     id: "result-lsp~stub",
@@ -617,7 +643,7 @@ export const scenarios: readonly Scenario[] = [
     data: "many",
     route: () => `/result/${RESULTS.appLsp.id}`,
     viewports: ["desktop"],
-    steps: still(() => ({ nav: null, title: fixtureTitle(RESULTS.appLsp), text: ["session: memory", "typing: completion p95", "MB"] })),
+    steps: still(() => ({ nav: null, heading: fixtureHeading(RESULTS.appLsp), title: RESULT_TITLE, text: ["session: memory", "typing: completion p95", "MB"] })),
   },
   // ── Journey: a chart dot opens its result; Back keeps the view; a chip hides a build ────────────
   {
@@ -627,16 +653,19 @@ export const scenarios: readonly Scenario[] = [
     route: () => "/",
     viewports: ["desktop"],
     steps: [
-      { name: "compare", expect: () => ({ nav: "Compare", title: new RegExp(`^wall time · ${escape(DEFAULT_PROJECT)} · `), chartDots: dots("many", appWall) }) },
+      { name: "compare", expect: () => ({ nav: "Compare", ...stubCompare("wall time"), chartDots: dots("many", appWall) }) },
       {
         // The Windows dot of beta: drawn last in its row, so no neighbour's hit target covers it.
         name: "click-dot",
         act: async (page) => {
+          // The chart sits below the billboard: bring it into view before aiming at a dot.
+          await page.locator(".chart").evaluate((el) => el.scrollIntoView({ block: "center" }));
+          await page.waitForTimeout(100);
           const at = await dotPosition(page, `${RESULTS.appWindows.id}:beta:cli.wallMs`);
           await page.mouse.click(at.x, at.y);
           await page.waitForURL((u) => u.hash.startsWith("#/result/"));
         },
-        expect: () => ({ route: `/result/${RESULTS.appWindows.id}`, nav: null, title: fixtureTitle(RESULTS.appWindows) }),
+        expect: () => ({ route: `/result/${RESULTS.appWindows.id}`, nav: null, heading: fixtureHeading(RESULTS.appWindows), title: RESULT_TITLE }),
       },
       {
         name: "browser-back",
@@ -644,7 +673,7 @@ export const scenarios: readonly Scenario[] = [
           await page.goBack();
           await page.waitForURL((u) => u.hash === "#/");
         },
-        expect: () => ({ route: "/", nav: "Compare", title: new RegExp(`^wall time · ${escape(DEFAULT_PROJECT)} · `), chartDots: dots("many", appWall) }),
+        expect: () => ({ route: "/", nav: "Compare", ...stubCompare("wall time"), chartDots: dots("many", appWall) }),
       },
       {
         name: "hide-build",
@@ -655,7 +684,7 @@ export const scenarios: readonly Scenario[] = [
         expect: () => ({
           route: /^\/\?hide=/,
           nav: "Compare",
-          title: new RegExp(`^wall time · ${escape(DEFAULT_PROJECT)} · `),
+          ...stubCompare("wall time"),
           chartDots: dots("many", (c) => appWall(c) && c.candidate !== stubIndex("many").builds.find((b) => b.label === ALPHA_NEXT)?.key),
         }),
       },

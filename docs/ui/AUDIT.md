@@ -13,9 +13,9 @@ configuration for parallax-results. Runs are reported in [audits/](./audits/).
 | 1 | [Parallax's docs/measurement.md](https://github.com/THEtheChad/parallax/blob/main/docs/measurement.md) | In effect (upstream) | What a ratio, an interval and a call mean. The site may simplify it, never contradict it |
 | 2 | [README.md](../../README.md) and the About page (`site/src/components/About/About.tsx`) | In effect | What the site claims: every number a ratio to a reference measured on the same machine, machines never averaged, results verified before merge |
 | 3 | [CONTRIBUTING.md](../../CONTRIBUTING.md) | In effect | The contributor's path, and what a result contains |
-| 4 | `site/src/styles.css` tokens and `site/src/theme.ts` | In effect. Not opened by reviewers; described in [Tokens](#tokens) | Palette (light and dark), series colours, type sizes, radius. No contrast test guards them yet |
-| 5 | Layout conventions (below) | Grown per run | Craft calls the documents above don't make |
-| 6 | [REFERENCES.md](./REFERENCES.md): reference sites and the standard (F1–F9, L1–L7) | Target, not yet built | The redesign. Until it lands, a gap between the site and this standard is the redesign's work, not an audit finding; once it lands, its tokens replace [Tokens](#tokens) and this row moves up |
+| 4 | [REFERENCES.md](./REFERENCES.md): reference sites and the standard (F1–F12, L1–L9) | In effect; its scorecard says which criteria the site meets | What the site must convey and how it should look. A criterion the scorecard marks unmet is known work, not a new finding |
+| 5 | `site/src/styles.css` tokens and `site/src/theme.ts` | In effect. Not opened by reviewers; described in [Tokens](#tokens) | The house palette (light and dark), series colours and shapes, faces, radii. Contrast checked by hand when the palette was set (REFERENCES.md L1); no test guards it yet |
+| 6 | Layout conventions (below) | Grown per run | Craft calls the documents above don't make |
 
 When two disagree, the lower number wins.
 
@@ -26,14 +26,14 @@ every route is `#/…` under the site's base.
 
 | Surface | Route | State | Scenarios |
 |---|---|---|---|
-| Compare: filters, build chips, ratio chart, table | `#/` with `kind`, `project`, `metric`, `threads`, `os`, `ref`, `hide` | built | yes: real (four viewports, a keyboard walk, a sort, every build hidden, a stale shared link), empty, one, many (command line and language server, light and dark), filtered, two journeys |
+| Compare: billboard, filters, build chips, ratio chart, table | `#/` with `kind`, `project`, `metric`, `threads`, `os`, `ref`, `hide`, `run` | built | yes: real (four viewports, a keyboard walk, a sort, every build hidden, a stale shared link), empty, one, many (command line and language server, light and dark), filtered, two journeys |
 | Ratio chart tooltip | Compare, on hover (on a touch screen, while a finger is on a dot) | built | yes: real, desktop (hover) and phone (press) |
 | Results list | `#/results` | built | yes: real, empty, one, many |
 | Result | `#/result/:id` | built | yes: real (light, and dark through the theme journey), an edge-case result, a noisy one, a language-server one, a missing id |
 | About | `#/about` | built | yes |
-| Shell: brand, Pages nav, theme menu, error boundary | every page | built | yes: asserted in every cell; the theme menu's choice through the theme journey (choose Dark, open a result, reload) |
-| Loading state | every page, while `data/index.json` loads | built | yes: real, with the index request held. At the time of writing a visitor sees the header alone: Layout's "Loading results…" fallback never shows |
-| Unknown route | `#/<anything else>` (e.g. `#/bogus/typo`) | built | yes: real. At the time of writing the router's default: a bare "Not Found" under the header, no nav item active |
+| Shell: the sky (brand, Pages nav, theme switch, telemetry), footer, error boundary | every page | built | yes: asserted in every cell; the theme switch's choice through the theme journey (choose Dark, open a result, reload) |
+| Loading state | every page, while `data/index.json` loads | built | yes: real, with the index request held: two turning reels and "Loading results…" (the router's pending component) |
+| Unknown route | `#/<anything else>` (e.g. `#/bogus/typo`), and a result id the index does not list | built | yes: real, and a missing result id: "end of side A", with the way back |
 
 A built surface with no scenarios is written first: auditing it starts at the
 skill's step 2.
@@ -134,97 +134,117 @@ A finding's `component` is one of these, `route:<path>` for a page-specific
 defect, or `ui-audit harness`. Add a name when a run needs one.
 
 ```text
-theme                 # site/src/theme.ts and the tokens in site/src/styles.css: palette, series colours, contrast
-Layout                # the shell: header, Pages nav, theme menu, error boundary, loading fallback
-PagesNav              # Layout's nav: Compare, Results, About
-ThemeMenu             # Layout's theme select
-ErrorBoundary         # Layout's Boundary: "Could not load the results: …"
-LoadingState          # Layout's Suspense fallback: "Loading results…"
-NotFound              # what the router renders for an unknown route (TanStack Router's default today)
-EmptyState            # the .empty message: no results, every build hidden, no metric
-Card                  # the .card section: h2 title, .sub line
-DataTable             # shared table styling and its .table-wrap scroller
-CallLabel             # the .call text: faster, slower, same ±r, unresolved, too few rounds
-format                # site/src/data/format.ts: ratios, intervals, values, platform names, series slots
+theme                 # site/src/theme.ts and the tokens in site/src/styles.css: palette, series colours, contrast, faces
+Layout                # the shell: the sky, footer, error boundary
+Sky                   # Layout's header: dusk gradient, stars, sun, grid floor, horizon line
+PagesNav              # Layout's nav pills: Compare, Results, About
+ThemeSwitch           # Layout's Auto / Light / Dark switch
+Telemetry             # Layout's strip along the horizon: results, machines, implementations, latest run
+Footer                # Layout's footer: provenance, "Run it on your machine", the caption
+ErrorBoundary         # Layout's Boundary: "the tape snapped", the error, Try again
+Loading               # the pending state: two reels and "Loading results…"
+NotFound              # "end of side A" for an unknown route or result, with the way back
+EmptyState            # "blank tape" (no results) and the .empty messages (every build hidden, no metric)
+Section               # a section's numbered rule with its neon script word (h2), aside and sub line
+Panel                 # the .panel box (filters, chart, facts)
+LinerNotes            # the .liner box around a table: its Side label and tools
+Controls              # .btn, .select, Segmented: sizes, states, focus
+Shape                 # an implementation's shape (circle, square, triangle, diamond, cross)
+DataTable             # shared table styling, its .table-wrap scroller, and its phone cards
+CallLabel             # the .call badge: faster, slower, same ±r, unresolved, too few rounds, no call
+format                # site/src/data/format.ts: ratios, intervals, values, "in words", platform names, series slots
 build-index           # scripts/build-index.ts: build labels and grouping, what the data says
 CompareView
-Filters
+Billboard             # CompareView's hero: h1, the figure, the sentence, badges, the race, run picker, Copy link
+Filters               # incl. the phone's Filters button
 BuildChips            # Filters' "Builds shown" chips
-RatioChart
-RatioChartTooltip     # RatioChart's tooltip: interval, call, rounds, both sides' figures, machine
-ComparisonTable
+Spotlight             # one implementation lit across the billboard, chips, legend, chart and table
+RatioChart            # incl. its legend and the "How to read" disclosure
+RatioChartTooltip     # RatioChart's tooltip: interval, in words, call, rounds, both sides' figures, machine
+ComparisonTable       # incl. CSV and JSON downloads
 ResultsList
 ResultView
+TapeCounter           # ResultView's rounds counter and splices
 FactsList             # ResultView's dl.facts: project, machine, state, harness, rounds, raw
-About
+ReproduceCommand      # ResultView's "Record it again" and About's suite command
+About                 # the J-card: Side A, Side B
 ```
 
 ## Tokens
 
 Reviewers judge pixels and do not open stylesheets; this is what
 `site/src/styles.css` and `site/src/theme.ts` define, so a finding can name the
-token it is about. Light is the base. Dark applies under the OS setting unless
-the theme menu says Light, and always when it says Dark (`data-theme` on the
-root, remembered in `localStorage`).
+token it is about. The palette is the house style from
+[REFERENCES.md](./REFERENCES.md) (L1): synthwave Kansas City at dusk. Light is
+the base in the stylesheet; dark applies under the OS setting unless the theme
+switch says Light, and always when it says Dark (`data-theme` on the root,
+remembered in `localStorage`). The sky band at the top is dusk in both.
 
 | Token | Role | Light | Dark |
 |---|---|---|---|
-| `--page` | page background (tier 0) | `#f9f9f7` | `#0d0d0d` |
-| `--surface-1` | cards, selects, chips, tooltip (tier 1) | `#fcfcfb` | `#1a1a19` |
-| `--surface-2` | tier 2 (defined, not used by the current pages) | `#f3f2ef` | `#232321` |
-| `--text-primary` | body text, titles, active nav item | `#0b0b0b` | `#f0efec` |
-| `--text-secondary` | lede, `.sub` lines, labels, table headers, inactive nav | `#52514e` | `#c3c2b7` |
-| `--text-muted` | axis labels, unpressed chips, "unresolved", "too few rounds" | `#898781` | `#898781` |
-| `--border` | card, select and chip borders | `rgba(11,11,11,.10)` | `rgba(255,255,255,.10)` |
-| `--grid` | chart grid lines, table row rules | `#e1e0d9` | `#2c2c2a` |
-| `--axis` | chart axes, the reference line at 1× | `#c3c2b7` | `#383835` |
-| `--accent` | links; equal to series 1 | `#2a78d6` | `#3987e5` |
-| `--series-1` | blue | `#2a78d6` | `#3987e5` |
-| `--series-2` | orange | `#eb6834` | `#d95926` |
-| `--series-3` | green | `#1baf7a` | `#199e70` |
-| `--series-4` | amber | `#eda100` | `#c98500` |
-| `--series-5` | pink | `#e87ba4` | `#d55181` |
-| `--good` | the call "faster" | `#006300` | `#0ca30c` |
-| `--critical` | the call "slower" | `#d03b3b` | `#e66767` |
-| `--same-band` | the grey "same ±r" band around 1× on the chart | `rgba(11,11,11,.045)` | `rgba(255,255,255,.05)` |
-| `--radius` | cards | `8px` | `8px` |
+| `--page` | page ground | `#fbf6ff` | `#0d0b14` |
+| `--surface-1` | panels, liner boxes, controls, tooltip | `#ffffff` | `#15111f` |
+| `--surface-2` | hover, tracks of the race bars | `#f4ecfb` | `#1d1729` |
+| `--text-primary` | body text, figures | `#1a1033` | `#f3e9ff` |
+| `--text-secondary` | sub lines, labels, table headers | `#4d3d6b` | `#c9b8e8` |
+| `--text-muted` | units, hints, "unresolved" | `#65567f` | `#a594c6` |
+| `--edge` | control and chip borders (3:1) | `#8f7cb0` | `#7a68a0` |
+| `--border` | panel and liner borders (decoration) | `#e4d6f5` | `#3a1f5c` |
+| `--grid` | chart grid, table rules | `#ece2f7` | `#261c38` |
+| `--pink` / `--accent` | section words, links, primary button, figure | `#c2186b` | `#ff3ea5` (links `#ff65b8`) |
+| `--cyan` | section numbers, Side labels, pressed segments, focus ring | `#0e7490` | `#2de2e6` |
+| `--reference` | the reference: the amber lamp at 1×, its race bar | `#b26b00` | `#ffcf7a` |
+| `--series-1` … `--series-5` | implementations: pink, cyan/teal, violet, orange, lime/green | `#c2186b` `#0e7490` `#6d3fd1` `#c2410c` `#4d7c0f` | `#ff3ea5` `#2de2e6` `#b38cff` `#ff8a3d` `#b8f35a` |
+| `--good` | the call "faster" | `#047857` | `#5cf2a0` |
+| `--critical` | the call "slower" | `#c81e3a` | `#ff6b7a` |
+| `--same-band` | the "same ±r" band at 1× | cyan at 8% | cyan at 7% |
+| `--figure-fill` | the billboard's figure | rose → pink → violet | amber → pink |
+| `--radius` / `--radius-control` | panels / controls | `16px` / `12px` | same |
+| sky | the header band in both schemes | `#0b0620` → `#1b1240` → `#4b1d6b` → `#b0306a` → `#ff8a6b`, horizon pink → cyan | same |
 
-- **Series.** An implementation keeps one series colour everywhere (chart dots
-  and intervals, legend, build chips), assigned from every build in the index:
-  the tsc-rs fork, tsrs and tsc 7 take series 1–3 in that order, any other
-  implementation the next slot alphabetically, capped at 5. Series 1 is also
-  the link colour.
-- **Calls** are drawn as a word plus a colour, never colour alone: "faster" in
-  `--good`, "slower" in `--critical`, "same ±5%" in the body colour, and
-  "unresolved" and "too few rounds" in `--text-muted`. The chart colours dots by
-  implementation, not by call; its calls are words, in the tooltip and the table.
-- **Type and shape.** System UI face throughout; body 14px/1.45; brand 20px/600;
-  card titles 15px/600; `.sub` lines and tables 13px; filter labels 12px; chart
-  text 12px (the band label 11px); tooltip 12px with a 15px/600 headline. Selects
-  have a 6px radius, chips are pills.
+- **Faces.** Geist Mono for everything that is read: text, labels, figures,
+  tables, controls. Yellowtail (neon script) only for section words, the
+  brand's "results" and state titles; Cedarville Cursive only for captions.
+  All self-hosted.
+- **Series.** An implementation keeps one colour and one shape everywhere
+  (chips, legend, chart marks, race, table): the tsc-rs fork, tsrs and tsc 7
+  take slots 1–3 (circle, square, triangle) in that order, any other
+  implementation the next slot alphabetically, capped at 5 (diamond, cross).
+  The reference is never a series colour: it is the amber lamp.
+- **Calls** are a word in a badge plus a colour, never colour alone: "faster"
+  in `--good`, "slower" in `--critical`, "same ±5%" in the body colour,
+  "unresolved", "too few rounds" and "no call" muted with a dashed edge.
+- **Glow** sits on section words, the brand, chips, the billboard's figure and
+  border, the lowest race bar and the reference lamp; never behind body text
+  and never on an interval.
 
 ## Layout conventions
 
 These are the dominant patterns in the code, which a consistency finding may
 cite as precedent. Each run adds what it settles.
 
-- **Type.** Body text is 14px at line-height 1.45 in the system UI face.
-  Secondary text (labels, `.sub` lines, tables) is 12–13px in
-  `--text-secondary`. There is no separate heading face.
-- **Cards.** Every page section is a `.card` (`--surface-1`, 1px `--border`,
-  `--radius`, 16px padding, 16px apart) with an `h2` title at 15px/600 and an
-  optional `.sub` line under it.
-- **Page.** At most 1200px wide with a 16px gutter. The header wraps rather
-  than collapsing into a menu.
-- **Headings.** The brand is the only `h1`, on every page; page sections are
-  `h2`.
-- **Numbers.** Tabular figures, right-aligned (`.num`). Ratios, intervals and
-  values are written by `format.ts` only (`0.32×`, `0.32× (0.31×–0.33×)`,
-  `340 ms`).
-- **Calls** are a word and a colour (`.call`), never colour alone.
-- **Implementations** keep one series colour across every view, assigned from
-  every build in the index, whatever a filter hides.
-- **Tables** don't wrap their cells; they scroll sideways inside `.table-wrap`.
+- **Page.** The sky band spans the window; content is at most 1200px wide with
+  a 16px gutter. On a phone the nav pills take a row of their own.
+- **Headings.** Each page has one h1 naming it and its selection, set as a
+  small capitals kicker (on Compare, inside the billboard). Sections are a
+  numbered rule (`01 —`) with a neon script word as their h2, an optional
+  aside on the right and a sub line under it.
+- **Boxes.** Filters, the chart and facts sit in a `.panel`; tables sit in a
+  `.liner` with a "Side A · …" label and their tools (downloads) on the right.
+- **Controls.** At least 44px tall (48px on touch for chips and the Filters
+  button), 16px or more of side padding. Up to five choices are a segmented
+  control; more are a select. The primary action is pink with a hard offset
+  shadow.
+- **Numbers.** Tabular figures, right-aligned in tables, units dimmer than the
+  number. Ratios, intervals and values are written by `format.ts` only
+  (`0.32×`, `0.32× (0.31×–0.36×)`, `340 ms`), and "in words" too (`3.1× as
+  fast`, `1.2× slower`).
+- **Answer first.** Compare opens with the billboard: one result raced, the
+  lowest observed figure, never "fastest".
+- **Spotlight.** Hovering or focusing an implementation anywhere on Compare
+  lights it everywhere and dims the rest.
+- **Tables** don't wrap their cells on a desktop; they scroll sideways inside
+  `.table-wrap`. On a phone each row is a card of label and value pairs.
 - **State** in the compare view lives in the URL: a view is a link.
 
 ## Accepted deviations

@@ -237,13 +237,15 @@ async function check(page: Page, sc: Scenario, vp: Viewport, exp: Expectation, r
   if (route !== undefined && !matches(hashRoute, typeof route === "string" ? decodeURIComponent(route) : route))
     problems.push(`on #${hashRoute}, expected #${route}`);
 
-  const h1s = await page.locator("h1").allInnerTexts();
+  // Each page has its own h1 (read as text, not as styled: some are set in capitals).
+  const h1s = await page.locator("h1").allTextContents();
   if (h1s.length !== 1) problems.push(`expected one h1, found ${h1s.length}`);
-  const heading = (h1s[0] ?? "").trim();
-  if (!matches(heading, exp.heading ?? "Parallax results")) problems.push(`h1 "${heading}" does not match ${exp.heading ?? "Parallax results"}`);
+  const heading = (h1s[0] ?? "").replace(/\s+/g, " ").trim();
+  if (!heading) problems.push("the h1 is empty");
+  else if (exp.heading !== undefined && !matches(heading, exp.heading)) problems.push(`h1 "${heading}" does not match ${exp.heading}`);
 
   // The shell: the brand in the header, and the nav marking this page (none on a result page).
-  const brand = await page.locator("header h1").isVisible().catch(() => false);
+  const brand = await page.locator("header .brand").isVisible().catch(() => false);
   if (!brand) problems.push("the header's brand is not visible");
   const active = (await page.locator('header nav[aria-label="Pages"] a[data-status="active"]').allInnerTexts()).map((t) => t.trim());
   const wantNav = exp.nav ? [exp.nav] : [];
@@ -253,25 +255,18 @@ async function check(page: Page, sc: Scenario, vp: Viewport, exp: Expectation, r
   const scheme = await schemeOf(page);
   if (scheme !== wantScheme) problems.push(`renders ${scheme}, expected ${wantScheme}`);
 
-  const titles = (await page.locator("h2").allInnerTexts()).map((t) => t.trim());
+  const titles = (await page.locator("h2").allTextContents()).map((t) => t.replace(/\s+/g, " ").trim());
   if (exp.title === null) {
     if (titles.length) problems.push(`expected no section title, found "${titles[0]}"`);
   } else if (!titles[0] || !matches(titles[0], exp.title)) problems.push(`first h2 "${titles[0] ?? ""}" does not match ${exp.title}`);
 
   for (const t of exp.text ?? []) {
-    const shown = await page
-      .getByText(t)
-      .first()
-      .isVisible()
-      .catch(() => false);
+    // Only visible matches count: the same words in a closed disclosure must not pass for them.
+    const shown = (await page.getByText(t).filter({ visible: true }).count().catch(() => 0)) > 0;
     if (!shown) problems.push(`expected text ${t} not visible`);
   }
   for (const t of exp.absent ?? []) {
-    const shown = await page
-      .getByText(t)
-      .first()
-      .isVisible()
-      .catch(() => false);
+    const shown = (await page.getByText(t).filter({ visible: true }).count().catch(() => 0)) > 0;
     if (shown) problems.push(`text ${t} is visible, and must not be`);
   }
   if (exp.chartDots !== undefined) {
@@ -280,9 +275,10 @@ async function check(page: Page, sc: Scenario, vp: Viewport, exp: Expectation, r
       if (!el) return 0;
       const chart = echarts.getInstanceByDom(el);
       if (!chart) return null;
-      const series = (chart.getOption() as { series: { type?: string; data?: unknown[] }[] }).series;
-      // replaceMerge leaves a null where a series was removed.
-      return series.filter((s) => s?.type === "custom").reduce((n, s) => n + (s.data?.length ?? 0), 0);
+      const series = (chart.getOption() as { series: { id?: string; data?: unknown[] }[] }).series;
+      // replaceMerge leaves a null where a series was removed. Marks are the "impl:" series; the
+      // others carry the reference and, on a phone, the row labels.
+      return series.filter((s) => String(s?.id ?? "").startsWith("impl:")).reduce((n, s) => n + (s.data?.length ?? 0), 0);
     });
     if (drawn !== exp.chartDots) problems.push(`chart has ${drawn ?? "no"} dots, expected ${exp.chartDots}`);
   }
@@ -299,7 +295,7 @@ async function check(page: Page, sc: Scenario, vp: Viewport, exp: Expectation, r
   }
   if (exp.sorted) {
     const { column, direction, values } = exp.sorted;
-    const table = page.locator("section.card", { has: page.getByRole("heading", { name: "Table", exact: true }) }).locator("table");
+    const table = page.locator("section", { has: page.getByRole("heading", { name: "liner notes", exact: true }) }).locator("table");
     const got = await table.evaluate(
       (t, col) => {
         const ths = [...t.querySelectorAll("thead th")];
@@ -374,14 +370,14 @@ async function probes(page: Page) {
     // The ratio charts: their size against their card, and what ECharts was given to draw.
     const charts = [...document.querySelectorAll<HTMLElement>(".chart")].map((el) => {
       const r = el.getBoundingClientRect();
-      const card = el.closest(".card")?.getBoundingClientRect();
-      const option = echarts.getInstanceByDom(el)?.getOption() as { series?: { type?: string; data?: unknown[] }[] } | undefined;
+      const card = el.closest(".panel")?.getBoundingClientRect();
+      const option = echarts.getInstanceByDom(el)?.getOption() as { series?: { id?: string; data?: unknown[] }[] } | undefined;
       return {
         label: el.getAttribute("aria-label"),
         width: Math.round(r.width),
         height: Math.round(r.height),
         overflowsCard: card ? r.right > card.right + 1 : null,
-        dots: option?.series?.filter((s) => s?.type === "custom").reduce((n, s) => n + (s.data?.length ?? 0), 0) ?? null,
+        dots: option?.series?.filter((s) => String(s?.id ?? "").startsWith("impl:")).reduce((n, s) => n + (s.data?.length ?? 0), 0) ?? null,
       };
     });
     return {
