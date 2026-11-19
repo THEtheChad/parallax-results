@@ -1,11 +1,12 @@
 // The table behind the chart, as liner notes: every comparison on screen, sortable, each linked to its
 // result. Everything the chart shows can be read here without hovering: the interval, its confidence
-// and rounds, the call, and each side's own figure. On a phone each row is a card.
+// and rounds, the call, and each side's own figure. On a phone each row is a card. Its downloads are
+// exactly the rows on screen, in the order on screen.
 
 import { Link } from "@tanstack/react-router";
 import { createColumnHelper, createSortedRowModel, rowSortingFeature, sortFn_alphanumeric, tableFeatures, useTable } from "@tanstack/react-table";
-import { useMemo } from "react";
-import { callText, fmtInterval, fmtPercent, fmtValue, platformName, speedText } from "../../data/format.ts";
+import { useMemo, type ReactNode } from "react";
+import { callText, fmtInterval, fmtPercent, fmtValue, measureOf, platformName, speedText } from "../../data/format.ts";
 import type { Build, Comparison, MetricInfo, ResultSummary } from "../../data/model.ts";
 import { Shape } from "../Shape/Shape.tsx";
 
@@ -28,8 +29,12 @@ interface Row {
   date: string;
 }
 
-// The records a download carries: what the table shows, plus the raw numbers behind it.
+const round = (v: number | null): number | null => (v === null ? null : Number(v.toPrecision(4)));
+
+// The records a download carries: the table's words, plus the numbers behind them (rounded to four
+// significant figures; confidence as a fraction).
 export function comparisonRecords(comparisons: Comparison[], builds: Map<string, Build>, results: Map<string, ResultSummary>, metric: MetricInfo): Record<string, string | number | null>[] {
+  const measure = measureOf(metric);
   return comparisons.map((c) => {
     const r = results.get(c.result)!;
     return {
@@ -38,16 +43,16 @@ export function comparisonRecords(comparisons: Comparison[], builds: Map<string,
       metric: metric.label,
       candidate: builds.get(c.candidate)?.label ?? c.candidate,
       reference: builds.get(c.reference)?.label ?? c.reference,
-      threads: c.mode,
-      ratio: c.ratio.estimate,
-      ratio_low: c.ratio.low,
-      ratio_high: c.ratio.high,
-      confidence: c.ratio.confidence,
+      threads: c.mode === "single" ? "1 thread" : "default",
+      ratio: round(c.ratio.estimate),
+      ratio_low: round(c.ratio.low),
+      ratio_high: round(c.ratio.high),
+      in_words: speedText(c.ratio.estimate, measure, metric.called ? c.call : null),
+      confidence: round(c.ratio.confidence),
       rounds: c.ratio.n,
-      call: c.call,
-      same_within: c.sameWithin,
-      [`candidate_${metric.unit}`]: c.candidateValue,
-      [`reference_${metric.unit}`]: c.referenceValue,
+      call: metric.called ? callText(c.call, c.sameWithin, measure) : "no call",
+      [`candidate_${metric.unit}`]: round(c.candidateValue),
+      [`reference_${metric.unit}`]: round(c.referenceValue),
       platform: r.machine.platform,
       cpu: r.machine.cpuModel,
       machine: r.machine.id,
@@ -92,9 +97,26 @@ const columns = helper.columns([
 ]);
 
 const NUMERIC = new Set(["ratio", "candidate", "reference"]);
-const CLASS: Record<string, string> = { track: "track", build: "build", machine: "optional", date: "optional" };
+const CLASS: Record<string, string> = { track: "track", build: "build" };
+
+function download(name: string, type: string, text: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const csvCell = (v: unknown): string => {
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
 
 export interface ComparisonTableProps {
+  // The liner's label, and the downloads' file name (without extension).
+  label: ReactNode;
+  file: string;
   comparisons: Comparison[];
   builds: Map<string, Build>;
   results: Map<string, ResultSummary>;
@@ -104,7 +126,7 @@ export interface ComparisonTableProps {
   onSpot: (implementation: string | null) => void;
 }
 
-export function ComparisonTable({ comparisons, builds, results, metric, slots, spot, onSpot }: ComparisonTableProps) {
+export function ComparisonTable({ label, file, comparisons, builds, results, metric, slots, spot, onSpot }: ComparisonTableProps) {
   const data = useMemo<Row[]>(
     () =>
       comparisons.map((c) => {
@@ -119,9 +141,9 @@ export function ComparisonTable({ comparisons, builds, results, metric, slots, s
           mode: c.mode === "single" ? "1 thread" : "default",
           ratio: c.ratio.estimate,
           ratioText: fmtInterval(c.ratio),
-          speed: speedText(c.ratio.estimate, metric.unit),
+          speed: speedText(c.ratio.estimate, measureOf(metric), metric.called ? c.call : null),
           evidence: `${fmtPercent(c.ratio.confidence)} · ${c.ratio.n} rounds`,
-          call: metric.called ? callText(c.call, c.sameWithin) : "no call",
+          call: metric.called ? callText(c.call, c.sameWithin, measureOf(metric)) : "no call",
           callKind: metric.called ? (c.call ?? "") : "",
           candidate: fmtValue(c.candidateValue, metric.unit),
           reference: fmtValue(c.referenceValue, metric.unit),
@@ -132,9 +154,35 @@ export function ComparisonTable({ comparisons, builds, results, metric, slots, s
     [comparisons, builds, results, metric, slots],
   );
   const table = useTable({ features, columns, data, initialState: { sorting: [{ id: "ratio", desc: false }] }, getRowId: (r) => r.id });
+  const byId = new Map(comparisons.map((c) => [c.id, c]));
+  // What is on screen, in the order on screen.
+  const records = () => comparisonRecords(table.getRowModel().rows.map((row) => byId.get(row.original.id)!), builds, results, metric);
+  const empty = comparisons.length === 0;
 
   return (
-    <div className="table-wrap">
+    <>
+      <div className="liner-label">
+        <span>{label}</span>
+        <span className="tools">
+          <button
+            type="button"
+            className="btn small"
+            disabled={empty}
+            onClick={() => {
+              const recs = records();
+              const head = Object.keys(recs[0] ?? {});
+              download(`${file}.csv`, "text/csv", [head.join(","), ...recs.map((r) => head.map((h) => csvCell(r[h])).join(","))].join("\n") + "\n");
+            }}
+          >
+            ↓ CSV
+          </button>
+          <button type="button" className="btn small" disabled={empty} onClick={() => download(`${file}.json`, "application/json", JSON.stringify(records(), null, 2) + "\n")}>
+            ↓ JSON
+          </button>
+        </span>
+      </div>
+      {empty ? <p className="empty">No rows: every build is hidden.</p> : null}
+    <div className="table-wrap" hidden={empty}>
       <table className="cards">
         <thead>
           {table.getHeaderGroups().map((group) => (
@@ -162,8 +210,11 @@ export function ComparisonTable({ comparisons, builds, results, metric, slots, s
             <tr
               key={row.id}
               data-dim={spot !== null && spot !== row.original.implementation}
+              data-spot={spot !== null && spot === row.original.implementation}
               onMouseEnter={() => onSpot(row.original.implementation)}
               onMouseLeave={() => onSpot(null)}
+              onFocus={() => onSpot(row.original.implementation)}
+              onBlur={() => onSpot(null)}
             >
               {row.getAllCells().map((cell) => {
                 const label = typeof cell.column.columnDef.header === "string" ? cell.column.columnDef.header : cell.column.id;
@@ -178,5 +229,6 @@ export function ComparisonTable({ comparisons, builds, results, metric, slots, s
         </tbody>
       </table>
     </div>
+    </>
   );
 }

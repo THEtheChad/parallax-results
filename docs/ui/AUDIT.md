@@ -231,18 +231,27 @@ cite as precedent. Each run adds what it settles.
   aside on the right and a sub line under it.
 - **Boxes.** Filters, the chart and facts sit in a `.panel`; tables sit in a
   `.liner` with a "Side A · …" label and their tools (downloads) on the right.
-- **Controls.** At least 44px tall (48px on touch for chips and the Filters
-  button), 16px or more of side padding. Up to five choices are a segmented
-  control; more are a select. The primary action is pink with a hard offset
-  shadow.
+- **Controls.** At least 44px tall (48px under a finger), 16px or more of side
+  padding. Up to five short choices are a segmented control, its pressed
+  segment pink; more, or long labels, are a select. The primary action and the
+  pressed chips carry a hard offset shadow. On Compare the build chips come
+  first in the filters.
 - **Numbers.** Tabular figures, right-aligned in tables, units dimmer than the
   number. Ratios, intervals and values are written by `format.ts` only
   (`0.32×`, `0.32× (0.31×–0.36×)`, `340 ms`), and "in words" too (`3.1× as
   fast`, `1.2× slower`).
 - **Answer first.** Compare opens with the billboard: one result raced, the
-  lowest observed figure, never "fastest".
+  lowest observed figure among every side (the reference included), never
+  "fastest". Its big figure is plain words ("3.1× as fast") only for a settled
+  call; otherwise the estimated ratio, with the call beside it.
+- **Words follow the call and the measure.** "faster"/"slower" for time,
+  "lower"/"higher" for CPU time and memory; "about the same" for same; "~" on
+  any estimate without a settled call.
 - **Spotlight.** Hovering or focusing an implementation anywhere on Compare
-  lights it everywhere and dims the rest.
+  lights it everywhere and dims the rest: marks, bars and glows only, never
+  text.
+- **The tape.** A Result page's binaries sit on a dark cassette label in both
+  schemes.
 - **Tables** don't wrap their cells on a desktop; they scroll sideways inside
   `.table-wrap`. On a phone each row is a card of label and value pairs.
 - **State** in the compare view lives in the URL: a view is a link.

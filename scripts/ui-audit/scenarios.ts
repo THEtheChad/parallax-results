@@ -588,7 +588,7 @@ export const scenarios: readonly Scenario[] = [
     steps: still(() => ({
       nav: "Compare",
       ...stubCompare("CPU time"),
-      text: ["this metric gets no call", "1 result from 1 machine", stubCompare("CPU time").reference],
+      text: ["gets no call", "1 result from 1 machine", stubCompare("CPU time").reference],
       chartDots: dots("many", (c) => c.project === DEFAULT_PROJECT && c.metric === "cli.cpuMs" && c.mode === "default" && c.result === RESULTS.appMac.id),
     })),
   },

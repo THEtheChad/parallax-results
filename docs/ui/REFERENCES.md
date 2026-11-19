@@ -178,9 +178,9 @@ dark) and the source.
 | F2 | Every chart says what it shows | Partly | Yes | The sub line names metric, project, reference, direction and the mark; memory reads "lower uses less memory" (it used to inherit "lower is faster") |
 | F3 | Uncertainty visible and explained | Partly | Mostly | Interval, confidence, rounds and call in the table as well as the tooltip; the band only when resolutions agree; one disclosure explains. The explanation is beside the chart, not beside every number |
 | F4 | Sources one step away | Mostly | Yes | A chart mark (a second tap on a phone), a table row's link and the billboard's "Open this result" each reach the result |
-| F5 | Share and export | Partly | Mostly | Copy link, and CSV and JSON of the table as filtered. Not yet: share images, README badges |
+| F5 | Share and export | Partly | Mostly | Copy link (it says "Copied ✓"), and CSV and JSON of the table: the rows on screen, in the order on screen. The table's sort is not in the link. Not yet: share images, README badges |
 | F6 | Freshness | Partly | Yes | "Latest run" in the telemetry on every page; the Results list, newest first, is the changelog |
-| F7 | A comparison builder | Partly | Mostly | Chips, kept in the link (reload, Back). The Pages nav's Compare drops the filters. The spotlight follows hover and focus on chips, marks, race lanes and table rows (not focus on rows), and has no tap of its own |
+| F7 | A comparison builder | Partly | Mostly | Chips, kept in the link (reload, Back) and by the Pages nav's Compare. The spotlight follows hover on chips, race lanes, marks and table rows, and focus on chips and table rows; it has no tap of its own |
 | F8 | Reproduce it | Partly | Yes | "Record it again": the suite command with the result's sides, kind and project; project commit and binaries' hashes beside it |
 | F9 | No default states | No | Yes | Reels while loading, "blank tape", "the tape snapped" with Try again, "end of side A" with the way back |
 | F10 | Projects like mine | No | No | Needs project size in the suite metadata |
@@ -188,7 +188,7 @@ dark) and the source.
 | F12 | History | n/a | n/a | No implementation has three builds on a project yet |
 | L1 | House palette, dark first | No | Yes | Every text colour 4.5:1 and every mark and edge 3:1 on its ground, in both schemes |
 | L2 | Mono with neon script | No | Yes | Geist Mono throughout; Yellowtail section words on numbered rules |
-| L3 | Roomy controls | No | Mostly | Buttons, selects, segments and chips 44px or more (48px on touch); a cyan focus outline. Small buttons (downloads, Copy) are 36px and table sort headers 32px |
+| L3 | Roomy controls | No | Yes | Buttons, selects, segments and chips 44px or more; under a finger, 48px (sort headers and segments 44px); a cyan focus outline |
 | L4 | Flash wherever it carries data | No | Yes | The billboard's figure and race, the lowest bar's gradient, glowing chips and spotlight; bars grow once on load and not at all under reduced motion; intervals stay crisp |
 | L5 | Instrument detail | Partly | Mostly | The telemetry strip; tabular figures; units dimmer in the billboard and race, not yet in tables |
 | L6 | Vivid series, told apart twice | Partly | Yes | Colour and shape per implementation everywhere; simulated under protanopia, deuteranopia and tritanopia (slots 4 and 5 converge under deuteranopia and lean on their shapes) |

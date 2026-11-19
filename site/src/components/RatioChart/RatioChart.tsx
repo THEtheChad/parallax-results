@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { EChartsOption, CustomSeriesRenderItemAPI, CustomSeriesRenderItemParams } from "echarts";
-import { callText, directionText, escapeHtml, fmtInterval, fmtPercent, fmtValue, platformName, readRatio, speedText } from "../../data/format.ts";
+import { callText, directionText, escapeHtml, fmtInterval, fmtPercent, fmtValue, measureNoun, measureOf, platformName, readRatio, speedText } from "../../data/format.ts";
 import type { Build, Comparison, MetricInfo, ResultSummary } from "../../data/model.ts";
 import { cssVar, useThemeVersion } from "../../theme.ts";
 import { Shape, shapeOfSlot, shapePoints } from "../Shape/Shape.tsx";
@@ -59,9 +59,15 @@ export function RatioChart(props: RatioChartProps) {
       if (el.current) setWidth(el.current.clientWidth);
     });
     resize.observe(el.current);
+    // Escape closes an open tooltip.
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") c.dispatchAction({ type: "hideTip" });
+    };
+    window.addEventListener("keydown", escape);
     // Row labels are measured in the house face; measure again once it has loaded.
     void document.fonts?.ready.then(() => setFontsReady(true));
     return () => {
+      window.removeEventListener("keydown", escape);
       resize.disconnect();
       c.dispose();
       chart.current = null;
@@ -150,7 +156,7 @@ export function RatioChart(props: RatioChartProps) {
         className="chart"
         style={{ height }}
         role="img"
-        aria-label={`${props.metric.label} relative to ${props.referenceLabel}, by build; ${directionText(props.metric.unit)}. The table below has every value.`}
+        aria-label={`${props.metric.label} relative to ${props.referenceLabel}, by build; ${directionText(measureOf(props.metric))}. The table below has every value.`}
       />
     </>
   );
@@ -167,7 +173,7 @@ interface Item {
 function labelWidth(labels: string[]): number {
   const ctx = document.createElement("canvas").getContext("2d");
   if (!ctx) return 200;
-  ctx.font = `12px ${FONT}`;
+  ctx.font = `13px ${FONT}`;
   return Math.ceil(Math.max(0, ...labels.map((l) => ctx.measureText(l).width)));
 }
 
@@ -184,6 +190,7 @@ function buildOption(p: RatioChartProps, narrow: boolean): EChartsOption {
   const axis = cssVar("--axis");
   const reference = cssVar("--reference");
   const rowIndex = new Map(p.rows.map((r, i) => [r.key, i]));
+  const measure = measureOf(p.metric);
 
   // Marks of one row spread a little around its line, in a stable order (date, then machine).
   const byRow = new Map<string, Comparison[]>();
@@ -312,6 +319,8 @@ function buildOption(p: RatioChartProps, narrow: boolean): EChartsOption {
   };
 
   return {
+    // ECharts animates in script, out of reach of the stylesheet's reduced-motion rule.
+    animation: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     animationDuration: 600,
     animationDurationUpdate: 650,
     animationEasingUpdate: "cubicInOut",
@@ -326,8 +335,8 @@ function buildOption(p: RatioChartProps, narrow: boolean): EChartsOption {
       borderColor: cssVar("--pink"),
       borderWidth: 1.5,
       padding: [10, 14] as [number, number],
-      extraCssText: `border-radius:14px;box-shadow:0 0 24px color-mix(in srgb, ${cssVar("--pink")} 35%, transparent);max-width:320px;white-space:normal`,
-      textStyle: { color: primary, fontSize: 12, fontFamily: FONT },
+      extraCssText: `border-radius:14px;box-shadow:0 0 24px color-mix(in srgb, ${cssVar("--pink")} 35%, transparent);max-width:${narrow ? 240 : 320}px;white-space:normal`,
+      textStyle: { color: primary, fontSize: narrow ? 11 : 12, fontFamily: FONT },
       formatter: (params: unknown) => {
         const item = (Array.isArray(params) ? params[0] : params)?.data as Item | undefined;
         const c = item && p.comparisons.find((x) => x.id === item.id);
@@ -337,8 +346,8 @@ function buildOption(p: RatioChartProps, narrow: boolean): EChartsOption {
         const ref = p.builds.get(c.reference)!;
         const lines = [
           `<div style="font-size:16px;font-weight:800">${escapeHtml(fmtInterval(c.ratio))}</div>`,
-          `<div style="color:${cssVar("--pink")};font-weight:700">${escapeHtml(speedText(c.ratio.estimate, p.metric.unit))} · ${escapeHtml(callText(c.call, c.sameWithin))}</div>`,
-          `<div style="color:${secondary}">${escapeHtml(fmtPercent(c.ratio.confidence))} interval, ${c.ratio.n} rounds · ${escapeHtml(readRatio(c.ratio.estimate))}</div>`,
+          `<div style="color:${cssVar("--pink")};font-weight:700">${escapeHtml(speedText(c.ratio.estimate, measure, p.metric.called ? c.call : null))} · ${escapeHtml(p.metric.called ? callText(c.call, c.sameWithin, measure) : "no call")}</div>`,
+          `<div style="color:${secondary}">${escapeHtml(fmtPercent(c.ratio.confidence))} interval, ${c.ratio.n} rounds · ${escapeHtml(readRatio(c.ratio.estimate, measure))}</div>`,
           `<div style="margin-top:6px">${escapeHtml(cand.label)}${c.mode === "single" ? " · 1 thread" : ""}: <b>${escapeHtml(fmtValue(c.candidateValue, p.metric.unit))}</b></div>`,
           `<div style="color:${secondary}">vs ${escapeHtml(ref.label)}: ${escapeHtml(fmtValue(c.referenceValue, p.metric.unit))}</div>`,
           `<div style="color:${secondary};margin-top:6px">${escapeHtml(platformName(r.machine.platform))} · ${escapeHtml(r.machine.cpuModel)} · ${escapeHtml(r.date)}</div>`,
@@ -352,12 +361,19 @@ function buildOption(p: RatioChartProps, narrow: boolean): EChartsOption {
       logBase: 2,
       min: lo,
       max: hi,
-      name: narrow ? directionText(p.metric.unit) : `${p.metric.unit === "bytes" ? "memory" : "time"} relative to the reference · ${directionText(p.metric.unit)}`,
+      name: narrow ? directionText(measure) : `${measureNoun(measure)} relative to the reference · ${directionText(measure)}`,
       nameLocation: "middle",
       nameGap: 30,
       nameTextStyle: { color: secondary, fontFamily: FONT, fontSize: narrow ? 11 : 12 },
       // The x axis sits at the bottom, not at y = 0 (the first row).
-      axisLine: { onZero: false, lineStyle: { color: axis } },
+      // The axis is a neon rule, like the section rules: pink to cyan.
+      axisLine: {
+        onZero: false,
+        lineStyle: {
+          width: 2,
+          color: { type: "linear", x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: cssVar("--pink") }, { offset: 1, color: cssVar("--cyan") }] },
+        },
+      },
       axisTick: { lineStyle: { color: axis } },
       axisLabel: { color: secondary, formatter: (v: number) => axisRatio(v), hideOverlap: true, fontFamily: FONT },
       splitLine: { lineStyle: { color: grid, type: "dashed" } },
@@ -377,6 +393,7 @@ function buildOption(p: RatioChartProps, narrow: boolean): EChartsOption {
         : {
             color: primary,
             fontFamily: FONT,
+            fontSize: 13,
             customValues: p.rows.map((_, i) => i),
             formatter: (v: number) => p.rows[v]?.label ?? "",
           },

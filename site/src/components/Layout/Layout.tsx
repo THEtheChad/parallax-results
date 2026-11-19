@@ -5,6 +5,7 @@ import { Link, Outlet } from "@tanstack/react-router";
 import { Component, Suspense, useState, type ReactNode } from "react";
 import { useIndex } from "../../data/useIndex.ts";
 import { applyTheme, storedTheme, type ThemeChoice } from "../../theme.ts";
+import { lastCompare } from "../CompareView/CompareView.tsx";
 import { Loading } from "../Loading/Loading.tsx";
 
 // quiet: render nothing on error (the telemetry strip; the page below reports the error itself).
@@ -89,6 +90,7 @@ export function Layout() {
     <>
       <header className="sky">
         <span className="sun" aria-hidden="true" />
+        <span className="haze" aria-hidden="true" />
         <span className="floor" aria-hidden="true" />
         <div className="masthead wrap">
           <Link to="/" className="brand" aria-label="Parallax results, home">
@@ -96,7 +98,7 @@ export function Layout() {
             <span className="script">results</span>
           </Link>
           <nav className="tabs" aria-label="Pages">
-            <Link to="/" activeOptions={{ exact: true, includeSearch: false }}>
+            <Link to="/" search={() => lastCompare()} activeOptions={{ exact: true, includeSearch: false }}>
               Compare
             </Link>
             <Link to="/results">Results</Link>

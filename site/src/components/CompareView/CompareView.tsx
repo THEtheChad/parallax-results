@@ -4,11 +4,11 @@
 // implementation anywhere spotlights it everywhere.
 
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
-import { directionText, fmtPercent, implementationSlots, platformName } from "../../data/format.ts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { directionText, fmtPercent, implementationSlots, measureNoun, measureOf, platformName } from "../../data/format.ts";
 import { KIND_LABEL, METRICS, metricInfo, type Comparison, type Kind } from "../../data/model.ts";
 import { useIndex } from "../../data/useIndex.ts";
-import { ComparisonTable, comparisonRecords } from "../ComparisonTable/ComparisonTable.tsx";
+import { ComparisonTable } from "../ComparisonTable/ComparisonTable.tsx";
 import { RatioChart, type ChartRow } from "../RatioChart/RatioChart.tsx";
 import { Section } from "../Section/Section.tsx";
 import { Billboard } from "./components/Billboard/Billboard.tsx";
@@ -31,6 +31,23 @@ export interface CompareSearch {
 
 const route = getRouteApi("/");
 
+const LAST = "parallax-results-compare";
+function rememberCompare(search: CompareSearch): void {
+  try {
+    sessionStorage.setItem(LAST, JSON.stringify(search));
+  } catch {
+    // Storage may be unavailable; the nav then opens Compare at its defaults.
+  }
+}
+// The compare view last seen in this tab, for the Pages nav.
+export function lastCompare(): CompareSearch {
+  try {
+    return JSON.parse(sessionStorage.getItem(LAST) ?? "{}") as CompareSearch;
+  } catch {
+    return {};
+  }
+}
+
 const unique = <T,>(xs: T[]): T[] => [...new Set(xs)];
 const mostCommon = (xs: string[]): string | undefined => {
   const n = new Map<string, number>();
@@ -43,20 +60,6 @@ const median = (xs: number[]): number => {
   return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
 };
 
-function download(name: string, type: string, text: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-const csvCell = (v: unknown): string => {
-  const s = v === null || v === undefined ? "" : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
-
 export function CompareView() {
   const index = useIndex();
   const search = route.useSearch();
@@ -66,6 +69,8 @@ export function CompareView() {
     [navigate],
   );
   const [spot, setSpot] = useState<string | null>(null);
+  // Remember this view, so the Pages nav's Compare returns to it from another page.
+  useEffect(() => rememberCompare(search), [search]);
 
   const builds = useMemo(() => new Map(index.builds.map((b) => [b.key, b])), [index]);
   const results = useMemo(() => new Map(index.results.map((r) => [r.id, r])), [index]);
@@ -145,7 +150,6 @@ export function CompareView() {
   }
 
   const refLabel = ref ? builds.get(ref)!.label : "–";
-  const exportRecords = () => (metric ? comparisonRecords(shown, builds, results, metric) : []);
 
   return (
     <>
@@ -163,6 +167,7 @@ export function CompareView() {
           builds={builds}
           slots={slots}
           scope={{ results: resultCount, machines }}
+          bothModes={threads === "both"}
           spot={spot}
           onSpot={setSpot}
         />
@@ -211,8 +216,8 @@ export function CompareView() {
                 <strong>
                   {metric.label} on {project}
                 </strong>
-                , each build's {metric.unit === "bytes" ? "memory" : "time"} divided by {refLabel}'s, measured in the same rounds on the same
-                machine. One mark is one result, its line the {confidences.join(", ") || "–"} interval; {directionText(metric.unit)}.
+                , each build's {measureNoun(measureOf(metric))} divided by {refLabel}'s, measured in the same rounds on the same
+                machine. One mark is one result, its line the {confidences.length ? `${confidences.join(", ")} ` : ""}interval; {directionText(measureOf(metric))}.
                 Machines are never averaged: their spread is the evidence.
                 {metric.called ? "" : " This metric is shown for context and gets no call."}
               </>
@@ -241,9 +246,12 @@ export function CompareView() {
                 <summary>How to read an interval and a call</summary>
                 <p>
                   A mark sits at the median ratio over the result's rounds; its line is the distribution-free interval at the stated
-                  confidence. A ratio of 0.5× takes half the reference's {metric.unit === "bytes" ? "memory" : "time"}. The call compares that
-                  interval with the result's resolution: <em>faster</em> or <em>slower</em> when the interval clears it, <em>same ±r</em> when
-                  it sits inside, <em>unresolved</em> when it straddles the edge, <em>too few rounds</em> when the result has too few to say.
+                  confidence. A ratio of 0.5× takes half the reference's {measureNoun(measureOf(metric))}. The call, as Parallax makes it:{" "}
+                  <em>{measureOf(metric) === "time" ? "faster" : "lower"}</em> when the whole interval lies below 1× and the estimate is at
+                  least 1% under it, <em>{measureOf(metric) === "time" ? "slower" : "higher"}</em> when it lies wholly above;{" "}
+                  <em>same ±r</em> when the whole interval lies within the resolution r around 1×; <em>unresolved</em> when none of these
+                  holds, which more rounds would settle; <em>too few rounds</em> when the interval cannot reach the confidence a call needs.
+                  In the tables, an estimate without a settled call is marked "~".
                   {sameWithin === null && shown.some((c) => c.sameWithin !== null)
                     ? " The results on screen use different resolutions, so no shared band is drawn."
                     : ""}{" "}
@@ -255,24 +263,17 @@ export function CompareView() {
 
           <Section n="03" word="liner notes" id="table" sub="Every comparison on screen, with each side's own figure. Select a result to see where it came from.">
             <div className="liner">
-              <div className="liner-label">
-                <span>
-                  Side A · {project} · vs {refLabel}
-                </span>
-                <span className="tools">
-                  <button type="button" className="btn small" onClick={() => {
-                    const recs = exportRecords();
-                    const head = Object.keys(recs[0] ?? {});
-                    download(`parallax-${project}-${metric.key}.csv`, "text/csv", [head.join(","), ...recs.map((r) => head.map((h) => csvCell(r[h])).join(","))].join("\n") + "\n");
-                  }}>
-                    ↓ CSV
-                  </button>
-                  <button type="button" className="btn small" onClick={() => download(`parallax-${project}-${metric.key}.json`, "application/json", JSON.stringify(exportRecords(), null, 2) + "\n")}>
-                    ↓ JSON
-                  </button>
-                </span>
-              </div>
-              <ComparisonTable comparisons={shown} builds={builds} results={results} metric={metric} slots={slots} spot={spot} onSpot={setSpot} />
+              <ComparisonTable
+                label={`Side A · ${project} · vs ${refLabel}`}
+                file={`parallax-${project}-${metric.key}`}
+                comparisons={shown}
+                builds={builds}
+                results={results}
+                metric={metric}
+                slots={slots}
+                spot={spot}
+                onSpot={setSpot}
+              />
             </div>
           </Section>
         </>

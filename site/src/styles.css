@@ -5,8 +5,8 @@
    marks and control edges meet 3:1. */
 :root {
   color-scheme: light;
-  --page: #fbf6ff;
-  --surface-1: #ffffff;
+  --page: #f7eefc;
+  --surface-1: #fffafe;
   --surface-2: #f4ecfb;
   --text-primary: #1a1033;
   --text-secondary: #4d3d6b;
@@ -27,8 +27,8 @@
   --series-5: #4d7c0f;
   --good: #047857;
   --critical: #c81e3a;
-  --same-band: rgba(14, 116, 144, 0.08);
-  --glow-strength: 0.35;
+  --same-band: color-mix(in srgb, #b26b00 12%, transparent);
+  --glow-strength: 0.5;
   --shadow-hard: #1a1033;
   --figure-fill: linear-gradient(180deg, #b0306a, #c2186b 55%, #6d3fd1);
   --radius: 16px;
@@ -38,6 +38,7 @@
   --night: #0d0b14;
   --sky: linear-gradient(180deg, #0b0620 0%, #1b1240 38%, #4b1d6b 68%, #b0306a 90%, #ff8a6b 100%);
   --horizon: linear-gradient(90deg, #ff3ea5, #ff65b8 40%, #2de2e6);
+  --neon-edge: linear-gradient(120deg, #ff3ea5, #ffcf7a 50%, #2de2e6);
   --sky-ink: #f3e9ff;
   --sky-muted: #cbb9ec;
   --neon-pink: #ff3ea5;
@@ -74,7 +75,7 @@
     --series-5: #b8f35a;
     --good: #5cf2a0;
     --critical: #ff6b7a;
-    --same-band: rgba(45, 226, 230, 0.07);
+    --same-band: color-mix(in srgb, #ffcf7a 12%, transparent);
     --glow-strength: 0.6;
     --shadow-hard: #2de2e6;
     --figure-fill: linear-gradient(180deg, #ffcf7a, #ff3ea5 62%, #ff65b8);
@@ -104,7 +105,7 @@
   --series-5: #b8f35a;
   --good: #5cf2a0;
   --critical: #ff6b7a;
-  --same-band: rgba(45, 226, 230, 0.07);
+  --same-band: color-mix(in srgb, #ffcf7a 12%, transparent);
   --glow-strength: 0.6;
   --shadow-hard: #2de2e6;
   --figure-fill: linear-gradient(180deg, #ffcf7a, #ff3ea5 62%, #ff65b8);
@@ -182,41 +183,55 @@ main.wrap {
   inset: 0;
   z-index: -1;
   background-image:
-    radial-gradient(1px 1px at 8% 18%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 22% 42%, #ffe9f6 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 37% 12%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 51% 30%, #e6fdff 50%, transparent 51%),
-    radial-gradient(1px 1px at 64% 9%, #fff 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 78% 26%, #ffe9f6 50%, transparent 51%),
-    radial-gradient(1px 1px at 91% 14%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 96% 44%, #e6fdff 50%, transparent 51%);
-  opacity: 0.8;
+    radial-gradient(2px 2px at 8% 16%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 17% 34%, #ffe9f6 50%, transparent 51%),
+    radial-gradient(2px 2px at 29% 10%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 41% 28%, #e6fdff 50%, transparent 51%),
+    radial-gradient(2px 2px at 53% 8%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 62% 22%, #ffe9f6 50%, transparent 51%),
+    radial-gradient(2px 2px at 71% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 84% 30%, #e6fdff 50%, transparent 51%),
+    radial-gradient(2px 2px at 93% 9%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 97% 38%, #ffe9f6 50%, transparent 51%);
+  opacity: 1;
 }
+/* The sun half-set behind the horizon, a haze above it, and the grid floor running to the viewer. */
 .sky .sun {
   position: absolute;
   z-index: -1;
-  right: max(16px, calc(50% - 560px));
-  bottom: 22px;
-  width: 168px;
-  height: 84px;
-  border-radius: 168px 168px 0 0;
+  right: max(24px, calc(50% - 400px));
+  bottom: 52px;
+  width: 260px;
+  height: 130px;
+  border-radius: 260px 260px 0 0;
   background:
-    repeating-linear-gradient(180deg, transparent 0 9px, #4b1d6b 9px 12px) bottom / 100% 55% no-repeat,
-    linear-gradient(180deg, #ffcf7a, #ff65b8 60%, #ff3ea5);
-  box-shadow: 0 0 60px 6px rgba(255, 62, 165, 0.45);
+    repeating-linear-gradient(180deg, transparent 0 11px, #4b1d6b 11px 15px) bottom / 100% 58% no-repeat,
+    linear-gradient(180deg, #ffe9a8, #ffcf7a 18%, #ff65b8 58%, #ff3ea5);
+  box-shadow:
+    0 0 70px 10px rgba(255, 62, 165, 0.45),
+    0 0 140px 30px rgba(255, 138, 107, 0.25);
+}
+.sky .haze {
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  bottom: 52px;
+  height: 90px;
+  background: linear-gradient(180deg, transparent, rgba(255, 138, 107, 0.28));
 }
 .sky .floor {
   position: absolute;
   z-index: -1;
-  left: -20%;
-  right: -20%;
+  left: -30%;
+  right: -30%;
   bottom: 0;
-  height: 22px;
+  height: 52px;
   background:
-    linear-gradient(90deg, rgba(255, 101, 184, 0.55) 1px, transparent 1px) 0 0 / 48px 100%,
-    linear-gradient(180deg, rgba(255, 101, 184, 0.7) 1px, transparent 1px) 0 0 / 100% 7px,
-    #1b1240;
-  transform: perspective(60px) rotateX(35deg);
+    linear-gradient(90deg, rgba(255, 101, 184, 0.75) 1.5px, transparent 1.5px) 50% 0 / 56px 100%,
+    linear-gradient(180deg, rgba(45, 226, 230, 0.75) 1.5px, transparent 1.5px) 0 0 / 100% 10px,
+    linear-gradient(180deg, #2a1450, #0b0620);
+  transform: perspective(90px) rotateX(48deg);
   transform-origin: top;
 }
 .sky::after {
@@ -257,8 +272,7 @@ main.wrap {
   color: #fff0fa;
   text-shadow:
     0 0 4px #ff3ea5,
-    0 0 12px #ff3ea5,
-    0 0 28px rgba(255, 62, 165, 0.7);
+    0 0 14px rgba(255, 62, 165, 0.75);
 }
 .tabs {
   display: flex;
@@ -323,7 +337,7 @@ main.wrap {
   flex-wrap: wrap;
   gap: 4px 20px;
   margin: 0 auto;
-  padding-block: 6px 40px;
+  padding-block: 10px 76px;
   list-style: none;
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -413,10 +427,12 @@ main.wrap {
 /* ---- Panels --------------------------------------------------------------------------------- */
 
 .panel {
-  background: var(--surface-1);
+  background:
+    var(--neon-edge) top / 100% 3px no-repeat,
+    var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 22px 20px 20px;
 }
 .liner {
   background: var(--surface-1);
@@ -478,6 +494,10 @@ main.wrap {
 .btn:hover {
   background: var(--surface-2);
   text-decoration: none;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 .btn:active {
   transform: translate(2px, 2px);
@@ -565,10 +585,12 @@ main.wrap {
   color: var(--text-primary);
 }
 .segmented button[aria-pressed="true"] {
-  background: var(--cyan);
+  background: var(--pink);
   color: var(--page);
   font-weight: 700;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--cyan) calc(var(--glow-strength) * 100%), transparent);
+  box-shadow:
+    inset 0 0 0 2px var(--surface-1),
+    0 0 14px color-mix(in srgb, var(--pink) calc(var(--glow-strength) * 100%), transparent);
 }
 
 /* ---- Compare: filters and build chips -------------------------------------------------------- */
@@ -585,8 +607,10 @@ main.wrap {
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed var(--border);
 }
 .chip {
   font: inherit;
@@ -601,13 +625,21 @@ main.wrap {
   background: color-mix(in srgb, var(--c) 14%, var(--surface-1));
   color: var(--text-primary);
   cursor: pointer;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--c) calc(var(--glow-strength) * 60%), transparent);
+  box-shadow:
+    4px 4px 0 var(--c),
+    0 0 16px color-mix(in srgb, var(--c) calc(var(--glow-strength) * 60%), transparent);
   transition:
     box-shadow 150ms ease,
     opacity 150ms ease;
 }
 .chip:hover {
-  box-shadow: 0 0 22px color-mix(in srgb, var(--c) calc(var(--glow-strength) * 100%), transparent);
+  box-shadow:
+    5px 5px 0 var(--c),
+    0 0 24px color-mix(in srgb, var(--c) calc(var(--glow-strength) * 100%), transparent);
+}
+.chip:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--c);
 }
 .chip[aria-pressed="false"] {
   border-style: dashed;
@@ -620,8 +652,19 @@ main.wrap {
   font-size: 12px;
   color: var(--text-muted);
 }
-[data-dim="true"] {
-  opacity: 0.28;
+/* The spotlight dims decoration only (marks, bars, glows); text keeps its contrast. */
+.chip[data-dim="true"] {
+  box-shadow: none;
+  background: transparent;
+  border-color: var(--edge);
+}
+[data-dim="true"] .shape,
+.race li[data-dim="true"] .track {
+  opacity: 0.3;
+}
+tbody tr[data-spot="true"] {
+  background: color-mix(in srgb, var(--pink) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--pink);
 }
 
 /* ---- Compare: the billboard ----------------------------------------------------------------- */
@@ -635,8 +678,13 @@ main.wrap {
     radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--pink) 16%, transparent), transparent 55%),
     radial-gradient(90% 120% at 0% 100%, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 55%),
     var(--surface-1);
-  border: 1.5px solid color-mix(in srgb, var(--pink) 55%, var(--border));
-  box-shadow: 0 0 40px color-mix(in srgb, var(--pink) calc(var(--glow-strength) * 30%), transparent);
+  border: 2px solid transparent;
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--pink) 16%, transparent), transparent 55%) padding-box,
+    radial-gradient(90% 120% at 0% 100%, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 55%) padding-box,
+    linear-gradient(var(--surface-1), var(--surface-1)) padding-box,
+    var(--neon-edge) border-box;
+  box-shadow: 0 0 44px color-mix(in srgb, var(--pink) calc(var(--glow-strength) * 32%), transparent);
 }
 .billboard h1 {
   margin: 0;
@@ -676,6 +724,19 @@ main.wrap {
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 18px color-mix(in srgb, var(--pink) calc(var(--glow-strength) * 70%), transparent));
+  animation: ignite 700ms ease-out both;
+}
+/* Once, on arrival: the figure lights like a neon tube. */
+@keyframes ignite {
+  from {
+    filter: drop-shadow(0 0 0 transparent);
+    opacity: 0.4;
+  }
+}
+.big .call {
+  align-self: center;
+  font-size: 13px;
+  min-height: 30px;
 }
 .big .word {
   font-family: var(--script);
@@ -751,6 +812,9 @@ main.wrap {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.race li.reference .tag {
+  background: var(--amber);
+}
 .race .name .tag {
   flex: none;
   font-size: 11px;
@@ -769,6 +833,7 @@ main.wrap {
   font-variant-numeric: tabular-nums;
 }
 .race .track {
+  transition: opacity 80ms ease;
   grid-area: bar;
   height: 14px;
   border-radius: 999px;
@@ -891,7 +956,7 @@ td {
   vertical-align: middle;
 }
 tbody tr {
-  transition: opacity 150ms ease;
+  transition: background 80ms ease;
 }
 tbody tr:hover {
   background: color-mix(in srgb, var(--pink) 6%, transparent);
@@ -1056,21 +1121,46 @@ dl.facts dd {
 .command code {
   flex: 1 1 280px;
   min-width: 0;
-  display: flex;
-  align-items: center;
+  display: block;
   min-height: 44px;
-  padding: 8px 14px;
+  padding: 10px 14px;
   border-radius: var(--radius-control);
   background: #0d0b14;
   color: #f3e9ff;
   border: 1.5px solid var(--edge);
-  overflow-x: auto;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
 }
 .command code::before {
   content: "$ ";
   color: #ff65b8;
   white-space: pre;
+}
+
+/* The tape: a cassette label, dark in both schemes (it re-scopes the dark tokens). */
+.liner.tape {
+  --text-primary: #f3e9ff;
+  --text-secondary: #c9b8e8;
+  --text-muted: #a594c6;
+  --grid: #2c2140;
+  --border: #ff3ea5;
+  --pink: #ff3ea5;
+  --cyan: #2de2e6;
+  --accent: #ff65b8;
+  --surface-1: #15111f;
+  --surface-2: #1d1729;
+  --edge: #7a68a0;
+  color: var(--text-primary);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 62, 165, 0.06) 6px 7px),
+    #15111f;
+  border-radius: 28px;
+  border-color: #ff3ea5;
+  box-shadow: 0 0 30px rgba(255, 62, 165, 0.25);
+}
+.liner.tape td code {
+  color: #2de2e6;
 }
 
 /* ---- About: the J-card ---------------------------------------------------------------------- */
@@ -1118,6 +1208,9 @@ ol.tracks > li::before {
 ol.tracks h3 {
   margin: 0;
   font-size: 14px;
+}
+ol.tracks code {
+  white-space: nowrap;
 }
 ol.tracks p {
   grid-column: 2;
@@ -1209,6 +1302,25 @@ ol.tracks p {
   flex: 1;
 }
 
+/* ---- Touch: every target at least 48px under a finger ------------------------------------- */
+
+@media (pointer: coarse) {
+  .btn,
+  .btn.small,
+  .select,
+  .chip,
+  .tabs a,
+  .theme-switch button {
+    min-height: 48px;
+  }
+  .segmented button {
+    min-height: 44px;
+  }
+  th button {
+    min-height: 44px;
+  }
+}
+
 /* ---- Motion: final state at once under reduced motion ---------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1270,7 +1382,7 @@ ol.tracks p {
   }
   .telemetry {
     gap: 2px 14px;
-    padding-block-end: 32px;
+    padding-block-end: 60px;
     font-size: 11px;
   }
   /* The telemetry wraps across the whole sky on a phone: no sun behind its words. */
@@ -1314,8 +1426,10 @@ ol.tracks p {
     width: 100%;
   }
   .segmented button {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     min-height: 40px;
+    white-space: normal;
   }
   .chip {
     min-height: 48px;

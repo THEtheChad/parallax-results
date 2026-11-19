@@ -3,9 +3,10 @@
 // says how to reproduce it.
 
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { callText, fmtInterval, fmtPercent, fmtValue, platformName, speedText } from "../../data/format.ts";
+import { callText, fmtInterval, fmtPercent, fmtValue, measureOf, platformName, speedText } from "../../data/format.ts";
 import { KIND_LABEL, metricInfo } from "../../data/model.ts";
 import { useIndex, useResult } from "../../data/useIndex.ts";
+import { CopyButton } from "../CopyButton/CopyButton.tsx";
 import { NotFound } from "../NotFound/NotFound.tsx";
 import { Section } from "../Section/Section.tsx";
 
@@ -187,10 +188,10 @@ function Result({ id }: { id: string }) {
                       <td data-label="Ratio (interval)" className="num">
                         {fmtInterval(c.ratio)}
                       </td>
-                      <td data-label="In words">{speedText(c.ratio.estimate, m?.unit ?? "ms")}</td>
+                      <td data-label="In words">{speedText(c.ratio.estimate, measureOf(m ?? { key: c.metric, unit: "ms" }), m?.called === false ? null : c.call)}</td>
                       <td data-label="Call">
                         <span className="call" data-call={m?.called === false ? "" : (c.call ?? "")}>
-                          {m?.called === false ? "no call" : callText(c.call, c.sameWithin)}
+                          {m?.called === false ? "no call" : callText(c.call, c.sameWithin, measureOf(m ?? { key: c.metric, unit: "ms" }))}
                         </span>
                       </td>
                       <td data-label="Candidate value" className="num">
@@ -208,7 +209,7 @@ function Result({ id }: { id: string }) {
         </div>
       </Section>
       <Section n="03" word="the tape" id="binaries" sub="The exact binaries, by hash, and how to record the same session on your machine.">
-        <div className="liner">
+        <div className="liner tape">
           <div className="liner-label">
             <span>Side B · binaries</span>
           </div>
@@ -220,7 +221,7 @@ function Result({ id }: { id: string }) {
                   <th>Role</th>
                   <th>Build</th>
                   <th>Version</th>
-                  <th>sha256</th>
+                  <th>sha256 (first 16)</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,7 +235,7 @@ function Result({ id }: { id: string }) {
                     <td data-label="Version" style={{ whiteSpace: "normal" }}>
                       {s.version ?? "–"}
                     </td>
-                    <td data-label="sha256">
+                    <td data-label="sha256 (first 16)">
                       <code>{s.binSha256.slice(0, 16)}</code>
                     </td>
                   </tr>
@@ -247,9 +248,7 @@ function Result({ id }: { id: string }) {
           </p>
           <div className="command">
             <code>{command}</code>
-            <button type="button" className="btn small" onClick={() => void navigator.clipboard?.writeText(command)}>
-              Copy
-            </button>
+            <CopyButton text={() => command} />
           </div>
         </div>
       </Section>

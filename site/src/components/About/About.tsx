@@ -1,5 +1,7 @@
 // About, as the liner notes of a tape: side A is how to read the site, side B how to add to it.
 
+import { CopyButton } from "../CopyButton/CopyButton.tsx";
+
 const COMMAND =
   "pnpm parallax suite run --ref tsc7=<path to tsc 7> --cand tsrs=<path to tsrs> --cand tsc-rs-fork=<path to the fork> --out ~/parallax-bundles --publish ~/parallax-results-new";
 
@@ -63,14 +65,14 @@ export function About() {
               <li>
                 <h3>Run the suite</h3>
                 <p>
-                  From a clone of <a href="https://github.com/THEtheChad/parallax">Parallax</a> at a commit on its main. Add{" "}
-                  <code>--only bench</code> for the command-line benches alone, which take minutes.
+                  From a clone of <a href="https://github.com/THEtheChad/parallax">Parallax</a> at a commit on its main, with the
+                  compiler binaries you want to compare (a tsc 7 build as the reference; builds.json in this repository lists the known
+                  ones). <code>--only bench</code> runs the command-line benches alone, which take minutes; the language-server benches
+                  take much longer.
                 </p>
                 <div className="command" style={{ gridColumn: 2, marginTop: 8 }}>
                   <code>{COMMAND}</code>
-                  <button type="button" className="btn small" onClick={() => void navigator.clipboard?.writeText(COMMAND)}>
-                    Copy
-                  </button>
+                  <CopyButton text={() => COMMAND} />
                 </div>
               </li>
               <li>

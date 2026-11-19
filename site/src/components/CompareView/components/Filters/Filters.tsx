@@ -1,4 +1,5 @@
-// The filters: every choice scopes the billboard, the chart and the table. Up to five choices are a
+// The filters: every choice scopes the billboard, the chart and the table. The build chips come
+// first, the playful part, then the rest. Up to five choices are a
 // segmented control; longer lists are a roomy select. Build chips show and hide candidates, each in
 // its implementation's colour and shape, and spotlight it on hover or focus. On a phone the whole
 // panel folds behind one button that names the current selection.
@@ -43,9 +44,10 @@ function Select(props: { label: string; value: string | undefined; options: Choi
   );
 }
 
-// Segmented when it fits, a select when the list is long.
+// Segmented when it fits (up to five short choices), a select when the list or its labels are long.
 function Choose(props: { label: string; value: string; choices: Choice<string>[]; onChange: (v: string) => void }) {
-  return props.choices.length <= 5 ? <Segmented {...props} /> : <Select label={props.label} value={props.value} options={props.choices} onChange={props.onChange} />;
+  const fits = props.choices.length <= 5 && props.choices.reduce((n, c) => n + c.label.length, 0) <= 36;
+  return fits ? <Segmented {...props} /> : <Select label={props.label} value={props.value} options={props.choices} onChange={props.onChange} />;
 }
 
 const THREADS: Choice<Threads>[] = [
@@ -67,14 +69,6 @@ export function Filters(p: FiltersProps) {
         <span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       <div className="filters-body" id="filters-body" data-open={open}>
-        <div className="filters">
-          <Choose label="Benchmark" value={p.kind} choices={p.kinds} onChange={(kind) => p.onChange({ kind: kind as Kind, metric: undefined, project: undefined, ref: undefined })} />
-          <Choose label="Project" value={p.project ?? ""} choices={p.projects.map((x) => ({ value: x, label: x }))} onChange={(project) => p.onChange({ project, ref: undefined })} />
-          <Select label="Metric" value={p.metric} options={p.metrics.map((m) => ({ value: m.key, label: m.label }))} onChange={(metric) => p.onChange({ metric })} />
-          <Segmented<Threads> label="Threads" value={p.threads} choices={THREADS} onChange={(threads) => p.onChange({ threads: threads === "both" ? undefined : threads })} />
-          <Choose label="OS" value={p.os} choices={[{ value: "all", label: "all" }, ...p.oses]} onChange={(os) => p.onChange({ os: os === "all" ? undefined : os })} />
-          <Select label="Reference" value={p.reference} options={p.refs} onChange={(ref) => p.onChange({ ref })} />
-        </div>
         {p.candidates.length > 0 && (
           <div className="chips" role="group" aria-label="Builds shown">
             {p.candidates.map((c) => (
@@ -98,6 +92,14 @@ export function Filters(p: FiltersProps) {
             ))}
           </div>
         )}
+        <div className="filters">
+          <Choose label="Benchmark" value={p.kind} choices={p.kinds} onChange={(kind) => p.onChange({ kind: kind as Kind, metric: undefined, project: undefined, ref: undefined })} />
+          <Choose label="Project" value={p.project ?? ""} choices={p.projects.map((x) => ({ value: x, label: x }))} onChange={(project) => p.onChange({ project, ref: undefined })} />
+          <Select label="Metric" value={p.metric} options={p.metrics.map((m) => ({ value: m.key, label: m.label }))} onChange={(metric) => p.onChange({ metric })} />
+          <Segmented<Threads> label="Threads" value={p.threads} choices={THREADS} onChange={(threads) => p.onChange({ threads: threads === "both" ? undefined : threads })} />
+          <Choose label="OS" value={p.os} choices={[{ value: "all", label: "all" }, ...p.oses]} onChange={(os) => p.onChange({ os: os === "all" ? undefined : os })} />
+          <Select label="Reference" value={p.reference} options={p.refs} onChange={(ref) => p.onChange({ ref })} />
+        </div>
       </div>
     </div>
   );
