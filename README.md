@@ -19,7 +19,10 @@ Parallax.
   hostnames, paths or outputs.
 - `builds.json`: known builds, matched to results by each binary's sha256, so the site can name
   them ("tsrs 0.25.0") and group one build's binaries across platforms. A binary that is not listed
-  still counts, under its hash.
+  still counts, under its hash. Adding `"reference": true` to a build makes it the reference Compare
+  opens on wherever it was measured against (with several, the first listed wins). With none named,
+  Compare opens on the reference measured on the most machines. Results against any other reference
+  stay one click away, never mixed in: a ratio means something only against its own reference.
 - `site/`: the site (Vite, React, TanStack Router and Table; Apache ECharts from cdnjs, pinned and
   integrity-checked). `scripts/build-index.ts` turns `results/` into the data it loads.
 

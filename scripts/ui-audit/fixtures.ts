@@ -31,8 +31,8 @@ import { buildIndex } from "../build-index.ts";
 import { METRICS, type Call, type Index, type Interval, type Kind, type Mode } from "../../site/src/data/model.ts";
 
 /** The stub sets. `real` is not here: it is results/ as `pnpm build` indexes it. */
-export type StubSet = "empty" | "one" | "many";
-export const STUB_SETS: readonly StubSet[] = ["empty", "one", "many"];
+export type StubSet = "empty" | "one" | "many" | "refs";
+export const STUB_SETS: readonly StubSet[] = ["empty", "one", "many", "refs"];
 
 export const FIXTURES_OUT = resolve(import.meta.dirname, "fixtures/out");
 
@@ -622,6 +622,25 @@ export const RESULTS = {
       },
     ],
   }),
+  // One contributor, three runs against another reference (the newer alpha) on one machine: more
+  // comparisons than the three machines against the usual reference, never more machines.
+  ...Object.fromEntries(
+    (["2026-01-05", "2026-01-06", "2026-01-07"] as const).map((day, i) => [
+      `otherRef${i + 1}`,
+      makeResult(`otherRef${i + 1}`, {
+        kind: "cli-bench",
+        project: "app",
+        machine: "laptop",
+        finishedAt: `${day}T20:00:00.000Z`,
+        ref: "alphaNext",
+        refMs: { default: 230, single: 540 },
+        candidates: [
+          { build: "beta", default: fast(0.62), single: fast(0.55) },
+          { build: "gamma", default: fast(0.7), single: fast(0.76) },
+        ],
+      }),
+    ]),
+  ) as Record<"otherRef1" | "otherRef2" | "otherRef3", FixtureResult>,
 };
 export type ResultName = keyof typeof RESULTS;
 
@@ -630,6 +649,7 @@ export const SETS: Record<StubSet, readonly ResultName[]> = {
   empty: [],
   one: ["appLinux"],
   many: ["appLinux", "appMac", "appWindows", "libLinux", "edge", "appLsp", "libLspMac"],
+  refs: ["appLinux", "appMac", "appWindows", "otherRef1", "otherRef2", "otherRef3"],
 };
 
 /** A result's repository path, as `parallax publish` names it. */

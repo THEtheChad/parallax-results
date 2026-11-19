@@ -18,7 +18,8 @@ const outDir = resolve(process.argv[3] ?? join(root, "site/public/data"));
 
 interface Registry {
   schema: "parallax.builds/1";
-  builds: { implementation: string; version: string; source: string; binaries: Record<string, string> }[];
+  // "reference": true names a build the reference Compare opens on; with several, the first wins.
+  builds: { implementation: string; version: string; source: string; binaries: Record<string, string>; reference?: boolean }[];
 }
 
 // What a published result holds that the index reads (parallax src/commands/publish.ts).
@@ -74,6 +75,7 @@ function walk(dir: string): string[] {
 }
 
 export function buildIndex(results: { file: string; result: Published }[], registry: Registry): Index {
+  const named = registry.builds.filter((b) => b.reference === true);
   const known = new Map<string, Registry["builds"][number]>();
   for (const b of registry.builds) for (const sha of Object.keys(b.binaries)) known.set(sha, b);
   const builds = new Map<string, Build>();
@@ -94,6 +96,7 @@ export function buildIndex(results: { file: string; result: Published }[], regis
         shas: [sha],
         known: Boolean(reg),
         source: reg?.source ?? null,
+        referenceRank: reg && named.includes(reg) ? named.indexOf(reg) : null,
       });
     }
     return key;

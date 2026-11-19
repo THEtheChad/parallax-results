@@ -39,6 +39,7 @@ site; once merged, the site updates.
 
 If you used a build that `builds.json` does not list, add it in the same pull request: its
 implementation, version, where it came from, and the sha256 of each binary (`sha256sum <binary>`).
+Leave its `reference` field out: which reference Compare opens on is the maintainer's call.
 
 ## What a result contains
 

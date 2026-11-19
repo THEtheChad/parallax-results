@@ -25,6 +25,9 @@ export interface Build {
   shas: string[];
   known: boolean;
   source: string | null;
+  // Where builds.json names this build a reference ("reference": true), its place among those named
+  // (0 first); null when it does not. Compare opens on the first named reference a selection has.
+  referenceRank: number | null;
 }
 
 export interface Machine {
