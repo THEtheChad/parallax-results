@@ -3,3 +3,6 @@ dist/
 site/public/data/
 *.log
 .verify/
+# UI audit: capture runs, and the fixture sets capture.ts writes
+scripts/ui-audit/runs/
+scripts/ui-audit/fixtures/out/

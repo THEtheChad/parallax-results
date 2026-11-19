@@ -15,7 +15,8 @@
     "build": "pnpm index && vite build",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test \"test/**/*.test.ts\"",
-    "check": "pnpm typecheck && pnpm test"
+    "check": "pnpm typecheck && pnpm test",
+    "ui-audit:capture": "node scripts/ui-audit/capture.ts"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.46",
@@ -24,6 +25,8 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.65.0",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
