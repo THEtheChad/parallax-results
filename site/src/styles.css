@@ -1298,7 +1298,8 @@ ol.tracks h3 {
   margin: 0;
   font-size: 14px;
 }
-ol.tracks code {
+/* Inline code in the prose only: the .command block below a track has to wrap. */
+ol.tracks p code {
   white-space: nowrap;
 }
 ol.tracks p {
